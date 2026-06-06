@@ -1029,6 +1029,7 @@
       let moved=0;
       if(mag>0.18){ // デッドゾーン。傾き量に比例した速度（慣性感をなくす）
         const dirx=vx/mag, diry=vy/mag; const SPD=3.0*Math.min(1,mag);
+        if(Math.abs(vx)>0.2) world.faceLeft=(vx<0); // 進行方向で左右反転
         const nx=world.px+dirx*SPD; if(!blocked(nx,world.py)){ world.px=nx; moved+=Math.abs(dirx*SPD); }
         const ny=world.py+diry*SPD; if(!blocked(world.px,ny)){ world.py=ny; moved+=Math.abs(diry*SPD); }
       }
@@ -1065,7 +1066,7 @@
       const av=AVATARS[save.avatar]||AVATARS.hero;
       wctx.fillStyle="rgba(10,8,18,0.35)"; wctx.beginPath(); wctx.ellipse(psx,psy+13,11,4,0,0,7); wctx.fill();
       const aim=getImg(av.img);
-      if(aim){ const w=34,h=34; wctx.imageSmoothingEnabled=false; wctx.drawImage(aim, psx-w/2, psy-h+8, w, h); }
+      if(aim){ const w=34,h=34; wctx.imageSmoothingEnabled=false; if(world.faceLeft){ wctx.save(); wctx.translate(psx,0); wctx.scale(-1,1); wctx.drawImage(aim, -w/2, psy-h+8, w, h); wctx.restore(); } else { wctx.drawImage(aim, psx-w/2, psy-h+8, w, h); } }
       else { // 画像読み込み前のフォールバック
         wctx.fillStyle=av.c; wctx.beginPath(); wctx.arc(psx,psy,9,0,7); wctx.fill();
         wctx.fillStyle="#f0d8b0"; wctx.beginPath(); wctx.arc(psx,psy-3,5,0,7); wctx.fill();
@@ -1083,13 +1084,14 @@
       const arch=(col,label)=>{ wctx.fillStyle="#241b30"; wctx.fillRect(sx+3,sy+4,TS-6,TS-6); wctx.fillStyle=col; wctx.fillRect(sx+6,sy+7,TS-12,TS-9); wctx.fillStyle="rgba(0,0,0,0.4)"; wctx.fillRect(sx+TS/2-4,sy+11,8,TS-13); wctx.fillStyle="#fff"; wctx.font="bold 11px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-3); };
       switch(c){
         case "t": { wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-4,11,4,0,0,7); wctx.fill(); wctx.fillStyle="#6b4a25"; wctx.fillRect(cxv-2,sy+TS-12,4,11); blob(cxv,sy+TS/2,12,"#1f6b2a"); blob(cxv-7,sy+TS/2+2,8,"#1f6b2a"); blob(cxv+7,sy+TS/2+2,8,"#1f6b2a"); blob(cxv-2,sy+TS/2-3,9,"#2f8a38"); blob(cxv-5,sy+TS/2-5,4,"#4caa50"); break; }
-        case "p": { wctx.fillStyle="#d9c489"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#cab777"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); wctx.strokeStyle="rgba(150,120,70,0.35)"; wctx.strokeRect(sx+0.5,sy+0.5,TS-1,TS-1); break; }
+        case "p": { wctx.fillStyle="#6f6c64"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#9b988f"; const s=8; for(let yy=0;yy<TS;yy+=s){ const off=((yy/s)%2)*(s/2); for(let xx=-off;xx<TS;xx+=s){ wctx.fillRect(sx+xx+1,sy+yy+1,s-2,s-2); } } wctx.fillStyle="#b2afa6"; wctx.fillRect(sx+(rb(0)%(TS-2)),sy+(rb(1)%(TS-2)),2,2); break; }
         case "g": { wctx.strokeStyle="#3f8a42"; wctx.lineWidth=1; const gx=sx+2+(rb(4)%(TS-6)), gy=sy+TS-6-(rb(5)%6); wctx.beginPath(); wctx.moveTo(gx,gy); wctx.lineTo(gx,gy-5); wctx.moveTo(gx+3,gy); wctx.lineTo(gx+3,gy-4); wctx.stroke(); if(rb(6)>11)blob(sx+6+(rb(7)%18),sy+8+(rb(2)%14),2,"#e8e070"); break; }
         case "o": { blob(cxv,sy+TS/2,11,"#8a8f99"); blob(cxv,sy+TS/2,8,"#5aa0d8"); blob(cxv-2,sy+TS/2-2,3,"#cfeaff"); break; }
         case "w": { wctx.fillStyle="#2f6fbe"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3b80d0"; wctx.fillRect(sx,sy+(rb(0)%TS),TS,2); wctx.strokeStyle="#7fb8ec"; wctx.lineWidth=1; wctx.beginPath(); wctx.moveTo(sx+4,sy+10); wctx.quadraticCurveTo(cxv,sy+7,sx+TS-4,sy+10); wctx.moveTo(sx+4,sy+19); wctx.quadraticCurveTo(cxv,sy+16,sx+TS-4,sy+19); wctx.moveTo(sx+4,sy+27); wctx.quadraticCurveTo(cxv,sy+24,sx+TS-4,sy+27); wctx.stroke(); break; }
-        case "#": { wctx.fillStyle=town?"#7a7080":"#403858"; wctx.fillRect(sx+1,sy+1,TS-2,TS-2); wctx.fillStyle="rgba(255,255,255,0.1)"; wctx.fillRect(sx+1,sy+1,TS-2,3); wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.fillRect(sx+1,sy+TS-4,TS-2,3); break; }
-        case "r": { blob(cxv,sy+TS/2,12,"#6a6478"); blob(cxv-3,sy+TS/2-3,6,"#807a90"); wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.arc(cxv+3,sy+TS/2+3,7,0,7); wctx.fill(); break; }
-        case ".": { wctx.fillStyle="#37304e"; wctx.fillRect(sx+2,sy+2,TS-4,TS-4); wctx.strokeStyle="#2a2440"; wctx.strokeRect(sx+2.5,sy+2.5,TS-5,TS-5); break; }
+        case "#": { if(town){ wctx.fillStyle="#7a7080"; wctx.fillRect(sx+1,sy+1,TS-2,TS-2); wctx.fillStyle="rgba(255,255,255,0.1)"; wctx.fillRect(sx+1,sy+1,TS-2,3); wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.fillRect(sx+1,sy+TS-4,TS-2,3); } else { // 石レンガの壁
+            wctx.fillStyle="#23203a"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3b3656"; const bh=8; for(let yy=0;yy<TS;yy+=bh){ const off=((yy/bh)%2)*8; for(let xx=-off;xx<TS;xx+=16){ wctx.fillRect(sx+xx+1,sy+yy+1,14,bh-2); } } wctx.fillStyle="rgba(255,255,255,0.07)"; wctx.fillRect(sx,sy,TS,2); } break; }
+        case "r": { blob(cxv,sy+TS/2,12,"#5d586e"); blob(cxv-3,sy+TS/2-3,6,"#736d86"); wctx.fillStyle="rgba(0,0,0,0.3)"; wctx.beginPath(); wctx.arc(cxv+3,sy+TS/2+4,7,0,7); wctx.fill(); break; }
+        case ".": { wctx.fillStyle="#332e48"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3e3954"; const s2=8; for(let yy=0;yy<TS;yy+=s2){ const off=((yy/s2)%2)*(s2/2); for(let xx=-off;xx<TS;xx+=s2){ wctx.fillRect(sx+xx+1,sy+yy+1,s2-2,s2-2); } } break; }
         case "I": house("#e6d2a8","#c0504d","宿"); break;
         case "S": house("#e6d2a8","#b07a3a","武"); break;
         case "F": house("#e6d2a8","#8a5ec0","配"); break;
