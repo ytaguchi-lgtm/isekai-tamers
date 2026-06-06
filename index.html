@@ -136,6 +136,7 @@
     /* 歩ける世界（キャンバス） */
     #world-head{ display:none; } /* 探索中は名前/HP/タイトルを出さない（すっきり表示） */
     #world-hint{ display:none !important; }
+    #world-loc{ position:absolute; top:8px; left:8px; background:#1a1426c8; border:1px solid var(--line); color:var(--gold); font-size:0.66rem; padding:3px 8px; border-radius:8px; z-index:4; pointer-events:none; }
     #world-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%); background:#1a1426e8; border:1px solid var(--gold); color:var(--ink); font-size:0.78rem; padding:6px 12px; border-radius:10px; white-space:nowrap; z-index:5; box-shadow:0 2px 10px #0008; }
     #world-head .fname{ color:var(--gold); letter-spacing:0.06em; }
     #screen-world{ touch-action:none; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:space-between; height:100dvh; max-width:100%; padding:6px 0 10px; }
@@ -269,6 +270,7 @@
     <div id="world-stage">
       <canvas id="world-canvas" width="448" height="448"></canvas>
       <button id="world-menu" class="round-btn">≡</button>
+      <div id="world-loc"></div>
       <div id="world-toast" class="hidden"></div>
     </div>
     <div id="world-controls">
@@ -576,6 +578,14 @@
       bookBehoimi:{kind:"book",name:"ベホイミの書",icon:"📗",teach:"behoimi",tier:"epic"},
       twinBlade:{kind:"equip",name:"双撃の剣",icon:"🗡️",slot:"weapon",atk:7,spd:3,effect:"twin",tier:"epic"},
       trickRing:{kind:"equip",name:"いたずらの輪",icon:"🌀",slot:"acc",spd:8,effect:"crit",tier:"epic"},
+      // ガチャ限定・トリッキー（本編未入手。強すぎない ユニーク能力）
+      mirageCloak:{kind:"equip",name:"幻影のマント",icon:"🌫️",slot:"armor",def:4,spd:5,effect:"dodge",tier:"epic"},
+      sageOrb:{kind:"equip",name:"賢者のオーブ",icon:"🔮",slot:"acc",def:2,mp:0,effect:"manaflow",tier:"epic"},
+      phantomFang:{kind:"equip",name:"まぼろしの牙",icon:"👻",slot:"weapon",atk:6,spd:4,effect:"dodge",tier:"epic"},
+      gamblerCoin:{kind:"equip",name:"ばくちのコイン",icon:"🎲",slot:"acc",atk:3,effect:"crit",tier:"epic"},
+      leechRobe:{kind:"equip",name:"吸魂のローブ",icon:"🩸",slot:"armor",def:5,hp:8,effect:"drain",tier:"epic"},
+      everSpring:{kind:"equip",name:"永泉のお守り",icon:"💧",slot:"acc",hp:10,effect:"regen",tier:"epic"},
+      manaBlade:{kind:"equip",name:"魔泉の剣",icon:"⚜️",slot:"weapon",atk:5,effect:"manaflow",tier:"epic"},
       bookIo:{kind:"book",name:"イオの書",icon:"📓",teach:"io",tier:"epic"},
       bookZao:{kind:"book",name:"ザオの書",icon:"📓",teach:"zao",tier:"epic"},
       // ③拡充：武器・防具
@@ -608,6 +618,7 @@
       epic:["fireSword","dragonSlayer","bloodEdge","thunderAxe","holyArmor","dragonMail","luckyCharm","vampFang","sageRing","magicRing","bookMerami","bookBehoimi","bookBikiruto","bookBagi","bookHyadain","bookBehomara","bookMerazoma","bookBehoma"],
     };
     const GACHA_LIMITED_W=["twinBlade","trickRing","thunderAxe","dragonSlayer"], GACHA_LIMITED_B=["bookIo","bookZao","bookMerazoma","bookBehoma","bookBikiruto"], GACHA_EQUIP_RARE=["ironSword","ironArmor","iceBlade","greatSword","mythril","chainMail"];
+    const GACHA_TRICKY=["mirageCloak","sageOrb","phantomFang","gamblerCoin","leechRobe","everSpring","manaBlade"]; // ガチャ限定トリッキー
     /* ===== 装備の大量生成：各部位200（素材20×種別10）＝計600。ドロップ(TIER_POOL)で入手 ===== */
     (function genEquip(){
       const MATS=[ {n:"き",t:"common",p:1},{n:"どう",t:"common",p:2},{n:"せいどう",t:"common",p:3},{n:"くろがね",t:"common",p:4},{n:"てつ",t:"rare",p:5},{n:"こうてつ",t:"rare",p:6},{n:"はがね",t:"rare",p:7},{n:"ぎん",t:"rare",p:8},{n:"きん",t:"rare",p:9},{n:"はくぎん",t:"rare",p:10},{n:"プラチナ",t:"epic",p:11},{n:"ミスリル",t:"epic",p:12},{n:"アダマン",t:"epic",p:13},{n:"オリハルコン",t:"epic",p:14},{n:"りゅうりんの",t:"epic",p:15},{n:"せいなる",t:"epic",p:16},{n:"まりゅうの",t:"epic",p:17},{n:"おうごんの",t:"epic",p:18},{n:"てんくうの",t:"epic",p:19},{n:"しんかの",t:"epic",p:20} ];
@@ -649,7 +660,7 @@
     const SELL_VALUE = { common:15, rare:60, epic:180 }; // ゴールド
     function sellValue(it){ return SELL_VALUE[it.tier]||10; }
     const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=30, PULL10_COST=270, FUSE_MIN_LV=10;
-    function effLabel(e){ return ({crit:"ときどき会心(2倍)",guard:"被ダメ20%減",drain:"与ダメの30%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回"})[e]||""; }
+    function effLabel(e){ return ({crit:"ときどき会心(2倍)",guard:"被ダメ20%減",drain:"与ダメの30%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回",dodge:"22%で 攻撃を かわす",manaflow:"毎ターン MP+5"})[e]||""; }
     function tierClass(t){ return t==="epic"?"epic":(t==="rare"?"rare":""); }
 
     /* 能力計算 */
@@ -828,7 +839,7 @@
     function randOf(a){ return a[Math.floor(Math.random()*a.length)]; }
     function newAvatar(){ const owned=save.avatars||[]; const avail=Object.keys(AVATARS).filter(k=>!owned.includes(k)); return avail.length?randOf(avail):null; }
     function rollOne(fr){ const rarity=fr||rollRarity();
-      if(rarity==="epic"){ const p=Math.random(); if(p<0.3)return {type:"item",rarity,tmplId:randOf(GACHA_LIMITED_W)}; if(p<0.55)return {type:"book",rarity,tmplId:randOf(GACHA_LIMITED_B)}; if(p<0.78&&GACHA_MON.length)return {type:"monster",rarity,speciesId:randOf(GACHA_MON)}; const av=newAvatar(); return av?{type:"avatar",rarity,avatar:av}:{type:"gold",rarity,gold:300}; }
+      if(rarity==="epic"){ const p=Math.random(); if(p<0.3)return {type:"item",rarity,tmplId:randOf(GACHA_TRICKY)}; if(p<0.5)return {type:"item",rarity,tmplId:randOf(GACHA_LIMITED_W)}; if(p<0.68)return {type:"book",rarity,tmplId:randOf(GACHA_LIMITED_B)}; if(p<0.82&&GACHA_MON.length)return {type:"monster",rarity,speciesId:randOf(GACHA_MON)}; const av=newAvatar(); return av?{type:"avatar",rarity,avatar:av}:{type:"gold",rarity,gold:300}; }
       if(rarity==="rare"){ const p=Math.random(); if(p<0.45)return {type:"consum",rarity,cid:"hipotion",n:1}; if(p<0.75)return {type:"item",rarity,tmplId:randOf(GACHA_EQUIP_RARE)}; return {type:"gold",rarity,gold:150}; }
       const p=Math.random(); if(p<0.5)return {type:"gold",rarity,gold:40+Math.floor(Math.random()*50)}; return {type:"consum",rarity,cid:(Math.random()<0.6?"potion":"ether"),n:1}; }
     function doPull(count){ const cost=count===10?PULL10_COST:PULL1_COST; if((save.gems||0)<cost)return; save.gems-=cost; const results=[]; for(let i=0;i<count;i++)results.push(rollOne()); if(count===10&&!results.some(r=>r.rarity!=="common"))results[Math.floor(Math.random()*10)]=rollOne("rare");
@@ -876,11 +887,11 @@
       document.querySelectorAll(".mtab").forEach(b=>b.classList.toggle("on",b.dataset.mt===menuTab));
       const body=document.getElementById("menu-body");
       if(menuTab==="party"){
-        body.innerHTML=`<div class="sub">手持ち：${save.box.length}体（出撃の入れ替えは <b>配合所</b> で）</div>`;
-        const sorted=save.box.slice().sort((a,b)=>(save.partyUids.includes(b.uid)?1:0)-(save.partyUids.includes(a.uid)?1:0));
-        sorted.forEach(m=>{ const t=totalStats(m),s=SPECIES[m.speciesId],inP=save.partyUids.includes(m.uid); const c=document.createElement("div"); c.className="monster"+(inP?" party-on":"");
+        body.innerHTML=`<div class="sub">手持ち（連れている ${save.partyUids.length}/${MAX_PARTY}体）　控えの管理・入れ替えは <b>配合所</b> で</div>`;
+        save.partyUids.forEach(uid=>{ const m=findMember(uid); if(!m)return; const t=totalStats(m),s=SPECIES[m.speciesId]; const c=document.createElement("div"); c.className="monster party-on";
           c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="stats">攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}</div></div><button class="small-btn ghost" data-equip="${m.uid}">装備変更</button></div>`;
           body.appendChild(c); });
+        if(!save.partyUids.length) body.innerHTML+=`<div class="sub">出撃メンバーが いません。配合所で 出撃に いれてね。</div>`;
       } else if(menuTab==="train"){
         body.innerHTML=`<div class="sub">装備変更 モンスターを えらぶ</div>`;
         save.box.forEach(m=>{ const s=SPECIES[m.speciesId]; const c=document.createElement("div"); c.className="monster";
@@ -959,7 +970,7 @@
       {town:"塔頂",         field:"天空城", tint:"rgba(240,210,120,0.30)"},
     ];
     const MAX_FLOOR=30;
-    function floorInfo(f){ f=Math.max(1,f||1); const t=FLOORS[Math.min(f,FLOORS.length)-1]; return {name:`第${f}層 ${t.town}`, field:t.field, tint:t.tint}; }
+    function floorInfo(f){ f=Math.max(1,f||1); const t=FLOORS[Math.min(f,FLOORS.length)-1]; return {name:`第${f}層 ${t.town}`, town:t.town, field:t.field, tint:t.tint}; }
     function enemyLevelFor(f){ return Math.max(1, Math.round(f*2.4)); } // 30層で約Lv72。配合を重ねて到達する想定
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
     const TS=32, VIEW=14; // タイル32px、表示14x14（画面を広く活用）
@@ -1138,7 +1149,7 @@
     function blocked(px,py){ const r=9; return isSolid(px-r,py-r)||isSolid(px+r,py-r)||isSolid(px-r,py+r)||isSolid(px+r,py+r); }
 
     function showWorld(){ hideScreens(); screenWorld.classList.remove("hidden"); setTint(world.area==="town"?TINT_TOWN:floorInfo(world.floor).tint); worldLoopOn=true; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); updateWorldHead(); const hint=world.area==="town"?"建物に ちかづいて [はいる]／下の門[X]で フィールドへ":(world.area==="field"?"草原を 歩く（敵出現）／街[T]・洞窟[D]へ":"探索（敵出現）／層ボス[!]・出口[X]"); document.getElementById("world-hint").textContent=hint; playBGM(world.area==="town"?"town":"field"); if(!rafStarted){ rafStarted=true; requestAnimationFrame(worldLoop); } }
-    function updateWorldHead(){ const suf=world.area==="town"?"":(world.area==="field"?"・フィールド":"・ダンジョン"); document.getElementById("world-name").textContent=floorInfo(world.floor).name+suf; document.getElementById("world-hp").textContent=(world.party||[]).map(a=>`${a.name.slice(0,3)} ${Math.max(0,a.hp)}/${a.maxHp}`).join("  "); }
+    function updateWorldHead(){ const fi=floorInfo(world.floor); const loc=world.area==="town"?fi.town:(world.area==="field"?fi.field+"（フィールド）":"ダンジョン"); const el2=document.getElementById("world-loc"); if(el2)el2.textContent=`第${world.floor}層　${loc}`; }
 
     function worldLoop(){ requestAnimationFrame(worldLoop); if(!worldLoopOn)return; if(!menuOpen&&!dlgOpen) updateWorld(); drawWorld(); }
     function updateWorld(){
@@ -1378,10 +1389,12 @@
       if(base<1)base=1; let dmg=base+(Math.floor(Math.random()*5)-2); if(dmg<1)dmg=1; let crit=false;
       if(a.effects&&a.effects.includes("crit")&&Math.random()<0.18){dmg*=2;crit=true;}
       if(d.effects&&d.effects.includes("guard"))dmg=Math.ceil(dmg*0.8);
-      if(d.guardUp)dmg=Math.ceil(dmg*0.7); if(d.defending)dmg=Math.ceil(dmg/2); return {dmg,crit}; }
+      if(d.guardUp)dmg=Math.ceil(dmg*0.7); if(d.defending)dmg=Math.ceil(dmg/2);
+      if(d.effects&&d.effects.includes("dodge")&&Math.random()<0.22){ dmg=0; crit=false; }
+      return {dmg,crit}; }
     function skillSpec(sk){ return sk.type==="magic"?{kind:"mag",power:sk.power,flat:sk.flat}:{kind:"phys",power:sk.power}; }
     function applyDrain(me,dmg){ if(me.effects.includes("drain")){ const h=Math.max(1,Math.floor(dmg*0.3)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
-    function regenTick(me){ if(me.effects.includes("regen")&&me.hp>0&&me.hp<me.maxHp){ const h=Math.max(1,Math.ceil(me.maxHp*0.06)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
+    function regenTick(me){ if(me.effects.includes("manaflow")&&me.hp>0&&me.mp<me.maxMp){ me.mp=Math.min(me.maxMp,me.mp+5); } if(me.effects.includes("regen")&&me.hp>0&&me.hp<me.maxHp){ const h=Math.max(1,Math.ceil(me.maxHp*0.06)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
     function regenPre(rg){ return rg?`<span class="heal">🌿 リジェネ ${rg} かいふく</span><br>`:""; }
 
     /* 行動順（すばやさ＝初期値順のイニシアチブ） */
@@ -1462,11 +1475,14 @@
 
     function refreshAlly(al,m){ const t=totalStats(m); const dHp=Math.max(0,t.maxHp-al.maxHp), dMp=Math.max(0,t.maxMp-al.maxMp); al.maxHp=t.maxHp; al.maxMp=t.maxMp; al.atk=t.atk; al.def=t.def; al.spd=t.spd; al.effects=t.effects; al.level=m.level; al.skills=(m.skills||[]).slice(); al.hp=Math.min(al.maxHp,al.hp+dHp); al.mp=Math.min(al.maxMp,al.mp+dMp); }
     // 仲間化：その場で出撃に入れる or 配合所(ボックス)へ預ける を選択
-    function handleRecruits(recruits){ if(!recruits||!recruits.length)return; recruits.forEach(r=>{ if(save.box.length>=MAX_BOX)return; save.box.push(r); const nm=SPECIES[r.speciesId].name; if(save.partyUids.length<MAX_PARTY){ if(confirm(`🤝 ${nm} が なかまに なりたそうだ！\n\n[OK] いま 出撃メンバーに入れる\n[キャンセル] 配合所(ボックス)に 預ける`)){ save.partyUids.push(r.uid); } } else { alert(`🤝 ${nm} が なかまに！ 出撃が満員なので ボックスへ（配合所で 入れ替えできます）`); } }); syncParty(); }
+    function handleRecruits(recruits){ if(!recruits||!recruits.length)return; recruits.forEach(r=>{ if(save.box.length>=MAX_BOX)return; save.box.push(r); const nm=SPECIES[r.speciesId].name;
+      if(save.partyUids.length<MAX_PARTY){ if(confirm(`🤝 ${nm} が なかまに なりたそうだ！\n\n[OK] 手持ちに 入れる\n[キャンセル] 配合所(ボックス)に 預ける`)){ save.partyUids.push(r.uid); } }
+      else { if(confirm(`🤝 ${nm} が なかまに！ 手持ちが 満員。\n\n[OK] 手持ちと 入れ替える\n[キャンセル] 配合所(ボックス)に 預ける`)){ const names=save.partyUids.map((u,i)=>`${i+1}: ${SPECIES[findMember(u).speciesId].name}`).join("\n"); let idx=parseInt(prompt(`だれと 入れ替える？ 番号を 入力：\n${names}`,"1"),10); if(idx>=1&&idx<=save.partyUids.length){ save.partyUids[idx-1]=r.uid; alert(`${nm} と 入れ替えた！`); } } }
+    }); syncParty(); }
     async function onBattleWon(){ busy=true; phase="clear"; hideAllPanels();
       SFX.win&&SFX.win();
       const boss=run.context==="boss"; let exp=0,gold=0; const drops=[],recruits=[];
-      run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.015){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } if(e.isBoss&&Math.random()<0.04){ if(save.box.length+recruits.length<MAX_BOX){ const dm=newMember(e.speciesId,e.level); recruits.push(dm); markSeen(dm.speciesId); } } });
+      run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.015){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } });
       if(Math.random()<0.015) drops.push(rollEnchant(run.floor)); // 極低確率：エンチャント装備
       const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0)));
       let gemGain = Math.random()<0.12 ? (1+Math.floor(Math.random()*2)) : 0; // ジェムは たまに少し
