@@ -1140,7 +1140,7 @@
     function questsForFloor(f){ const huntN=3+Math.floor(f/3); const q=[{type:"hunt",n:huntN}]; if(f>=2)q.push({type:"collect",n:1+(f%2)}); return q; }
     // 層ごとの物語（依頼人・固有名・理由）。未定義の層は genLore で 雰囲気のある内容を自動生成
     const QUEST_LORE={
-      1:{hunt:"スライム",coll:"テイマー証",brief:[{n:"ナビ",t:"まずは テイマーギルドの 登録試験！ この層の 魔物を たおして 実力を 見せよう。"},{n:"ナビ",t:"きみは 剣を 持てない。でも 契約した 魔物が いれば 戦える。証の かけらも 拾ってきてね。"}],done:[{n:"ナビ",t:"合格だ！ これで きみは 正式な【調教師】。塔への 扉が ひらいたよ。"}]},
+      1:{hunt:"魔物",coll:"テイマー証",brief:[{n:"試験官",t:"きみが 噂の 新人テイマーだね。ギルド登録には “実技試験”が ある。"},{n:"試験官",t:"フィールドや ダンジョンに 出る 魔物を 何体か 倒して、実力を 示してほしい。"},{n:"試験官",t:"準備が できたら 受けて くれ。きみと その相棒の 力、見せてもらおう。"}],done:[{n:"試験官",t:"……見事だ。合格！ これで きみは 正式な【調教師】。塔への 扉を 開けておいた。"}]},
       2:{hunt:"水妖",coll:"水の結晶",brief:[{n:"村長",t:"水郷の 井戸に 水妖が わいて、街の 水が 濁って しもうた…。"},{n:"村長",t:"水妖を 払い、清らかな『水の結晶』を 集めて 井戸を 浄化して くれぬか。頼む。"}],done:[{n:"村長",t:"おお、水が 澄んだ！ 恩に着る。奥の 主も、きみたちなら…。"}]},
       3:{hunt:"火竜の眷属",coll:"火竜の鱗",brief:[{n:"???",t:"よお。あんたも 上を めざす テイマーか。"},{n:"カイ",t:"おれは カイ。この層の 火竜の眷属を 狩って『火竜の鱗』を 集めると 道が ひらく。先に 行かせて もらうぜ。"}],done:[{n:"カイ",t:"…ちっ、もう 終わらせたのか。少しは やるじゃねえか。"}]},
       4:{hunt:"さらいの魔物",coll:"手がかりの布",brief:[{n:"母親",t:"娘の ミラが 魔物に さらわれて…！ お願い、助けて！"},{n:"母親",t:"魔物を 倒して、ミラの『手がかりの布』を 見つけて ください…！"}],done:[{n:"ミラ",t:"…たすけて くれて ありがとう。あなたの 魔物さん、つよいね。"}]},
@@ -1177,12 +1177,12 @@
     function loreFor(f){ return QUEST_LORE[f]||genLore(f); }
     function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0}; return save.quest[f]; }
     function questDone(f){ const p=questProg(f); return questsForFloor(f).every(q=> q.type==="hunt"?p.h>=q.n:p.c>=q.n); }
-    function questText(f){ const p=questProg(f),L=loreFor(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️${L.hunt} ${Math.min(p.h,q.n)}/${q.n}`:`📦${L.coll} ${Math.min(p.c,q.n)}/${q.n}`).join("　"); }
-    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f); const obj=qs.map(q=> q.type==="hunt"?`・${L.hunt}を ${q.n}体 たおす`:`・『${L.coll}』を ${q.n}個 あつめる（宝箱/フィールド）`).join("\n"); return L.brief.concat([ {n:"ナビ",t:"【クエスト】\n"+obj}, {n:"ナビ",t:"達成すると ダンジョン奥の 層ボスへの 扉が ひらくよ！"} ]); }
+    function questText(f){ const p=questProg(f),L=loreFor(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️魔物 ${Math.min(p.h,q.n)}/${q.n}`:`📦${L.coll} ${Math.min(p.c,q.n)}/${q.n}`).join("　"); }
+    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f); const obj=qs.map(q=> q.type==="hunt"?`・この層に 出る 魔物を ${q.n}体 たおす`:`・ダンジョンの 宝箱から 『${L.coll}』を ${q.n}個 あつめる`).join("\n"); return L.brief.concat([ {n:"受付",t:"【クエスト】\n"+obj}, {n:"受付",t:"達成すると ダンジョン奥の 層ボスへの 扉が ひらくよ。"} ]); }
     function questDoneStory(f){ return (loreFor(f).done||[{n:"ナビ",t:"試練 達成！ 層ボスに 挑めるよ。"}]); }
     function afterQuest(f,wasDone){ if(!wasDone && questDone(f)){ showToast("✨ クエスト達成！ 層ボスに 挑める！"); SFX.fanfare&&SFX.fanfare(); } else { showToast("クエスト  "+questText(f)); } }
-    function addHunt(f,n){ if(questDone(f))return; const was=questDone(f); questProg(f).h+=(n||1); persist(); afterQuest(f,was); }
-    function addCollect(f){ const was=questDone(f); questProg(f).c+=1; persist(); afterQuest(f,was); }
+    function addHunt(f,n){ const p=questProg(f); if(!p.accepted){ showToast("街の 受付で 依頼を 受けてから 挑もう"); return; } if(questDone(f))return; const was=questDone(f); p.h+=(n||1); persist(); afterQuest(f,was); }
+    function addCollect(f){ const p=questProg(f); if(!p.accepted)return; const was=questDone(f); p.c+=1; persist(); afterQuest(f,was); }
     let toastTimer=null;
     function showToast(msg){ const t=document.getElementById("world-toast"); if(!t)return; t.textContent=msg; t.classList.remove("hidden"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),2600); }
     function bossClearStory(f){
@@ -1194,7 +1194,9 @@
       const base=[ {n:"ナビ",t:`第${f}層の 層ボスを たおした……！ さすが、わたしの ${save.heroName||"テイマー"}！`}, {n:"ナビ",t:"上の層への 扉が ひらいたよ。HPも MPも 全回復。次の 街で 仕切り直そう。"} ];
       return milestone?milestone.concat(base):base;
     }
-    function npcGuideStory(){ const f=world.floor; const qline=questDone(f)?"この層の 試練は 達成済み！ ダンジョン奥の 層ボスに 挑めるぞ。":("層ボスに 挑むには 試練が 必要だ → "+questText(f)); return [ {n:"あんないの人",t:"武器屋では ゴールドで そうび、ガチャ堂では ジェムで 限定品が 手に入るよ。"}, {n:"あんないの人",t:"配合は Lv10をこえた 魔物どうしで できる。配合所では 出撃の 入れ替えも できるぞ。"}, {n:"あんないの人",t:qline}, {n:"あんないの人",t:"宿屋に 入れば HPもMPも 全回復だ。むりせず もどっておいで。"} ]; }
+    function npcGuideStory(){ const f=world.floor; const p=questProg(f);
+      if(!p.accepted){ p.accepted=true; persist(); showToast("📜 依頼を 受注した！  "+questText(f)); return [ {n:"受付",t:"ようこそ。この層の 依頼（試練）を つたえるね。"} ].concat(questBrief(f)).concat([ {n:"受付",t:"進み具合は ≡メニューでも 確認できるよ。武運を！" } ]); }
+      const qline=questDone(f)?"試練は 達成済み！ ダンジョン奥の 層ボスに 挑めるよ。":("依頼の のこり → "+questText(f)); return [ {n:"受付",t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できるよ。"}, {n:"受付",t:qline}, {n:"受付",t:"宿屋に 入れば HP・MP 全回復。むりせず もどっておいで。"} ]; }
     function npcVillagerStory(f){ return [ {n:"村人",t:"塔の魔物は 倒しても 倒しても わいてくる…。むりは しなさんな。"}, {n:"村人",t:`${floorInfo(f).town}は いいところだろう。……早く 外の世界に 帰りたいがな。`} ]; }
     function travelerTalk(){ const f=world.floor;
       if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
@@ -1215,7 +1217,7 @@
       // イベント消化＝マスを通常床に
       if(world&&world.grid){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="E")world.grid[y][x]="g"; }
     }
-    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor).concat(questBrief(world.floor))); }
+    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor).concat([{n:"ナビ",t:"まずは この街の 受付（案内人）に 話しかけて、依頼（試練）を 受けよう。"}])); }
     let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null, actionTargetC=null;
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
@@ -1329,7 +1331,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ const f=world.floor; if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ この層の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこりクエスト】\n"+questText(f)} ]); return; } const go=()=>{ if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }; const p=questProg(f); if(!p.toldDone){ p.toldDone=true; persist(); runDialogue(questDoneStory(f), go); } else go(); }
+      else if(c==="B"){ const f=world.floor; if(!questProg(f).accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:"街の 受付（案内人）で 話を 聞いて、依頼を 受けてから 挑もう。"} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } const go=()=>{ if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }; const p=questProg(f); if(!p.toldDone){ p.toldDone=true; persist(); runDialogue(questDoneStory(f), go); } else go(); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
@@ -1463,10 +1465,11 @@
         run={ allies: world.party, enemies:[], floor: world.floor, drops:[], recruits:[], gems:0, context:isBossBattle?"boss":"field" };
         spawnEnemiesFor(world.floor, isBossBattle); await preloadBattleImgs(run.enemies.concat(run.allies)); showDungeon(); renderBattle(); playBGM(isBossBattle?"boss":"battle");
         run.order=null; run.turnIdx=0; run.cur=null; phase="player"; okSetup=true;
+        if(isBossBattle && (world.floor===10||world.floor===20)){ run.allies.forEach(a=>{ if(a.hp>0){ a.status=a.status||{}; a.status.atkUp=4; } }); run._escort=true; } // カイ同行＝共闘バフ
       }catch(err){ console.error("startEncounter setup error:",err); }
       // オーバーレイは何があっても必ず消す（黒画面固着の防止）
       t.classList.remove("bt-in","bt-out"); t.classList.add("hidden");
-      if(okSetup){ try{ log(`${isBossBattle?"層ボス！ ":""}${enemyNames()} が あらわれた！`); nextTurn(); }catch(err){ console.error("battle start error:",err); showWorld(); } }
+      if(okSetup){ try{ log(`${isBossBattle?"層ボス！ ":""}${enemyNames()} が あらわれた！${run._escort?'<br><span class="scout">⚔️ カイと その魔物が 共闘！ みんなの 攻撃力が 上がった！</span>':""}`); nextTurn(); }catch(err){ console.error("battle start error:",err); showWorld(); } }
       else { showWorld(); }
     }
     function enemyCountForFloor(f){ const r=Math.random(); if(f<=1)return r<0.7?1:2; if(f<=3)return r<0.45?1:(r<0.85?2:3); return r<0.3?1:(r<0.7?2:3); }
