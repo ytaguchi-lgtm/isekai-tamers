@@ -926,8 +926,10 @@
     function enemyLevelFor(f){ return Math.max(1, Math.round(f*2.4)); } // 30層で約Lv72。配合を重ねて到達する想定
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
     const TS=32, VIEW=11; // タイル32px、表示11x11
-    const SOLID_TOWN=new Set(["t","o","w","#"]);
+    const SOLID_TOWN=new Set(["t","o","w","#","h"]);
+    const SOLID_FIELD=new Set(["w","t"]);
     const SOLID_DUN=new Set(["#","r"]);
+    function solidSet(){ return world.area==="town"?SOLID_TOWN:(world.area==="field"?SOLID_FIELD:SOLID_DUN); }
     let world=null, pendingResult=null, worldLoopOn=false, menuOpen=false, rafStarted=false;
     /* ===== 会話エンジン＆ストーリー ===== */
     let dlg=null, dlgOpen=false;
@@ -987,20 +989,43 @@
     let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null;
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
+    // ===== 街：施設＋石畳の十字路＋家＋木＋下の門→フィールド =====
     function buildTown(floor){
-      const W=16,H=13; const g=[]; for(let y=0;y<H;y++){ let row=""; for(let x=0;x<W;x++){ let c="p"; if(x===0||y===0||x===W-1||y===H-1)c="t"; row+=c; } g.push(row.split("")); }
-      const trees=[[2,2],[13,2],[2,10],[13,10],[5,3],[10,3],[5,9],[10,9]]; trees.forEach(([x,y])=>g[y][x]="t");
-      g[6][8]="o"; // ふん水
-      g[3][4]="I"; g[3][11]="S"; g[9][4]="F"; g[9][11]="G"; // 宿/武器/配合/ガチャ
-      g[1][8]="D"; // ダンジョンへの門（上）
-      g[7][6]="N"; g[7][10]="V"; // NPC: あんない人 / 村人
-      return {grid:g,W,H,spawn:{x:8,y:10}};
+      const W=20,H=15; const g=[];
+      for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++){ row.push((x===0||y===0||x===W-1||y===H-1)?"#":"g"); } g.push(row); }
+      for(let x=1;x<W-1;x++) g[7][x]="p";                 // 横の大通り
+      for(let y=1;y<H-1;y++){ g[y][9]="p"; g[y][10]="p"; } // 縦の大通り
+      for(let y=6;y<=8;y++)for(let x=8;x<=11;x++) g[y][x]="p"; // 中央広場
+      g[7][9]="o"; g[7][10]="p";                            // 噴水
+      g[3][4]="I"; g[3][15]="S"; g[11][4]="F"; g[11][15]="G"; // 宿/武器/配合/ガチャ
+      [[2,3],[6,3],[13,3],[17,3],[2,11],[6,11],[13,11],[17,11]].forEach(([x,y])=>{ if(g[y][x]==="g")g[y][x]="h"; }); // 家
+      [[1,5],[18,5],[1,9],[18,9],[5,5],[14,9]].forEach(([x,y])=>{ if(g[y][x]==="g")g[y][x]="t"; }); // 木
+      g[8][7]="N"; g[8][12]="V";                            // NPC
+      g[H-1][9]="X"; g[H-1][10]="X";                        // 下の門→フィールド
+      return {grid:g,W,H,spawn:{x:9,y:H-3}};
     }
+    // ===== フィールド：海に囲まれた草原・砂浜・木立・池＋街ゲート＋ダンジョン洞窟 =====
+    function buildField(floor){
+      const W=24,H=18; const g=[];
+      for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++){ let c="g"; if(x<=1||y<=1||x>=W-2||y>=H-2)c="w"; else if(x<=2||y<=2||x>=W-3||y>=H-3)c="s"; row.push(c);} g.push(row); }
+      [[6,5],[7,5],[6,6],[7,6],[8,6],[16,6],[17,6],[16,7],[10,12],[11,12],[12,12],[18,13],[19,13]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="t"; }); // 木立
+      for(let y=8;y<=10;y++)for(let x=13;x<=15;x++) if(g[y]&&g[y][x]==="g")g[y][x]="w"; // 池
+      [[14,11],[15,8]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="s"; }); // 池の砂辺
+      g[H-3][5]="T";   // 街ゲート（下）
+      g[3][18]="D";    // ダンジョン洞窟（右上）
+      return {grid:g,W,H,spawn:{x:5,y:H-4}};
+    }
+    // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function buildDungeon(floor){
-      const W=16,H=13; const g=[]; for(let y=0;y<H;y++){ let row=""; for(let x=0;x<W;x++){ let c="."; if(x===0||y===0||x===W-1||y===H-1)c="#"; row+=c; } g.push(row.split("")); }
-      const rocks=[[3,3],[4,3],[11,3],[12,3],[7,5],[8,5],[3,8],[12,8],[6,9],[9,9],[7,7]]; rocks.forEach(([x,y])=>{ if(g[y]&&g[y][x])g[y][x]="r"; });
-      g[1][8]="B"; g[11][8]="X"; // 層ボス（上）/ 出口（下）
-      return {grid:g,W,H,spawn:{x:8,y:10}};
+      const W=22,H=16; const g=[]; for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++)row.push("#"); g.push(row); }
+      const room=(x0,y0,w,h)=>{ for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
+      const hcorr=(a,b,y)=>{ for(let x=Math.min(a,b);x<=Math.max(a,b);x++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
+      const vcorr=(a,b,x)=>{ for(let y=Math.min(a,b);y<=Math.max(a,b);y++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
+      room(2,11,5,3); room(8,7,5,3); room(15,2,5,3); room(2,2,4,3); room(15,10,5,4); // 入口/中央/ボス/北西/南東
+      hcorr(4,18,12); vcorr(2,12,3); vcorr(2,12,18); vcorr(7,12,10); hcorr(10,18,4);
+      [[10,8],[12,8],[4,12],[17,11],[3,3],[16,3]].forEach(([x,y])=>{ if(g[y]&&g[y][x]===".")g[y][x]="r"; }); // 岩
+      g[2][17]="B"; g[12][3]="X"; // 層ボス（北東の部屋）/ 出口（入口）→フィールド
+      return {grid:g,W,H,spawn:{x:5,y:12}};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
     function healFull(a){ a.hp=a.maxHp; a.mp=a.maxMp; }
@@ -1008,7 +1033,7 @@
       floor=floor||(world?world.floor:(save.floor||1));
       if(!world) world={};
       world.area=area; world.floor=floor;
-      const m=area==="town"?buildTown(floor):buildDungeon(floor);
+      const m=area==="town"?buildTown(floor):(area==="field"?buildField(floor):buildDungeon(floor));
       world.grid=m.grid; world.W=m.W; world.H=m.H;
       world.px=m.spawn.x*TS+TS/2; world.py=m.spawn.y*TS+TS/2; world.grace=3; world.dist=0;
       if(area==="town"){ syncParty(); world.party.forEach(healFull); }
@@ -1017,11 +1042,11 @@
       if(area==="town") maybeFloorStory();
     }
     function tileChar(tx,ty){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)return "#"; return world.grid[ty][tx]; }
-    function isSolid(px,py){ const tx=Math.floor(px/TS), ty=Math.floor(py/TS); const c=tileChar(tx,ty); return (world.area==="town"?SOLID_TOWN:SOLID_DUN).has(c); }
+    function isSolid(px,py){ const tx=Math.floor(px/TS), ty=Math.floor(py/TS); const c=tileChar(tx,ty); return solidSet().has(c); }
     function blocked(px,py){ const r=9; return isSolid(px-r,py-r)||isSolid(px+r,py-r)||isSolid(px-r,py+r)||isSolid(px+r,py+r); }
 
-    function showWorld(){ hideScreens(); screenWorld.classList.remove("hidden"); setTint(world.area==="town"?TINT_TOWN:floorInfo(world.floor).tint); worldLoopOn=true; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); updateWorldHead(); document.getElementById("world-hint").textContent=world.area==="town"?"建物に ちかづいて [はいる]／≡でメニュー":"スティックで さがく／出口[X]・層ボス[!]"; playBGM(world.area==="town"?"town":"field"); if(!rafStarted){ rafStarted=true; requestAnimationFrame(worldLoop); } }
-    function updateWorldHead(){ document.getElementById("world-name").textContent=world.area==="town"?floorInfo(world.floor).name:`${floorInfo(world.floor).name}・ダンジョン`; document.getElementById("world-hp").textContent=(world.party||[]).map(a=>`${a.name.slice(0,3)} ${Math.max(0,a.hp)}/${a.maxHp}`).join("  "); }
+    function showWorld(){ hideScreens(); screenWorld.classList.remove("hidden"); setTint(world.area==="town"?TINT_TOWN:floorInfo(world.floor).tint); worldLoopOn=true; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); updateWorldHead(); const hint=world.area==="town"?"建物に ちかづいて [はいる]／下の門[X]で フィールドへ":(world.area==="field"?"草原を 歩く（敵出現）／街[T]・洞窟[D]へ":"探索（敵出現）／層ボス[!]・出口[X]"); document.getElementById("world-hint").textContent=hint; playBGM(world.area==="town"?"town":"field"); if(!rafStarted){ rafStarted=true; requestAnimationFrame(worldLoop); } }
+    function updateWorldHead(){ const suf=world.area==="town"?"":(world.area==="field"?"・フィールド":"・ダンジョン"); document.getElementById("world-name").textContent=floorInfo(world.floor).name+suf; document.getElementById("world-hp").textContent=(world.party||[]).map(a=>`${a.name.slice(0,3)} ${Math.max(0,a.hp)}/${a.maxHp}`).join("  "); }
 
     function worldLoop(){ requestAnimationFrame(worldLoop); if(!worldLoopOn)return; if(!menuOpen&&!dlgOpen) updateWorld(); drawWorld(); }
     function updateWorld(){
@@ -1035,11 +1060,13 @@
       }
       // 乗っているタイルで インタラクト判定
       const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const c=tileChar(tx,ty);
-      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", X:"街へ もどる", N:"はなす", V:"はなす" };
-      const newCtx = ctxMap[c]||null;
+      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす" };
+      let newCtx = ctxMap[c]||null;
+      if(c==="X") newCtx = world.area==="town" ? "フィールドへ でる" : "フィールドへ もどる";
       if(newCtx!==actionCtx){ actionCtx=newCtx; const ab=document.getElementById("world-action"); if(actionCtx){ ab.textContent=actionCtx; ab.classList.remove("hidden"); } else ab.classList.add("hidden"); }
-      // エンカウント（ダンジョンの床）
+      // エンカウント（ダンジョンの床 / フィールドの草原）
       if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.2){ world.dist=0; if(Math.random()<0.16) startEncounter(false); } } }
+      else if(world.area==="field" && c==="g"){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.4){ world.dist=0; if(Math.random()<0.11) startEncounter(false); } } }
     }
     function doAction(){
       const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const c=tileChar(tx,ty);
@@ -1048,8 +1075,9 @@
       else if(c==="F"){ fuseSel=[]; showFuse(); renderFuse(); }
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
+      else if(c==="T"){ enterArea("town", world.floor); }
       else if(c==="B"){ if(confirm(`${floorInfo(world.floor).name} の 層ボスに いどみますか？`)) startEncounter(true); }
-      else if(c==="X"){ enterArea("town", world.floor); }
+      else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
     }
@@ -1057,7 +1085,7 @@
       const cw=wcanvas.width, ch=wcanvas.height;
       let camx=world.px-cw/2, camy=world.py-ch/2;
       camx=Math.max(0,Math.min(camx,world.W*TS-cw)); camy=Math.max(0,Math.min(camy,world.H*TS-ch));
-      const town=world.area==="town";
+      const town=world.area!=="dungeon"; // 街・フィールドは草地ベース、ダンジョンは暗い床
       wctx.fillStyle=town?"#3a7a3a":"#15121f"; wctx.fillRect(0,0,cw,ch);
       const x0=Math.floor(camx/TS), y0=Math.floor(camy/TS);
       for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town,tx,ty); } }
@@ -1092,11 +1120,14 @@
             wctx.fillStyle="#23203a"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3b3656"; const bh=8; for(let yy=0;yy<TS;yy+=bh){ const off=((yy/bh)%2)*8; for(let xx=-off;xx<TS;xx+=16){ wctx.fillRect(sx+xx+1,sy+yy+1,14,bh-2); } } wctx.fillStyle="rgba(255,255,255,0.07)"; wctx.fillRect(sx,sy,TS,2); } break; }
         case "r": { blob(cxv,sy+TS/2,12,"#5d586e"); blob(cxv-3,sy+TS/2-3,6,"#736d86"); wctx.fillStyle="rgba(0,0,0,0.3)"; wctx.beginPath(); wctx.arc(cxv+3,sy+TS/2+4,7,0,7); wctx.fill(); break; }
         case ".": { wctx.fillStyle="#332e48"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3e3954"; const s2=8; for(let yy=0;yy<TS;yy+=s2){ const off=((yy/s2)%2)*(s2/2); for(let xx=-off;xx<TS;xx+=s2){ wctx.fillRect(sx+xx+1,sy+yy+1,s2-2,s2-2); } } break; }
+        case "s": { wctx.fillStyle="#e6d6a6"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#dcc890"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),2,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); break; }
+        case "h": { const roofs=["#c0504d","#b07a3a","#5b86c0","#7a9a3a","#a05ac0"]; house("#e6d2a8",roofs[rb(0)%roofs.length],""); break; }
         case "I": house("#e6d2a8","#c0504d","宿"); break;
         case "S": house("#e6d2a8","#b07a3a","武"); break;
         case "F": house("#e6d2a8","#8a5ec0","配"); break;
-        case "G": house("#e6d2a8","#3aa0a0","ガ"); break;
-        case "D": arch("#c9a86a","塔"); break;
+        case "G": house("#e6d2a8","#5b86c0","ガ"); break;
+        case "T": { arch("#8a6a3a","街"); wctx.fillStyle="#c0504d"; wctx.fillRect(sx+4,sy+2,TS-8,4); break; } // 街ゲート
+        case "D": { wctx.fillStyle="#5d586e"; wctx.fillRect(sx+2,sy+4,TS-4,TS-6); blob(cxv,sy+TS/2-2,9,"#6a647a"); wctx.fillStyle="#0a0a12"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS/2+2,6,8,0,0,7); wctx.fill(); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText("洞",cxv,sy+TS-1); break; } // 洞窟
         case "B": arch("#c33","！"); break;
         case "X": arch("#39c","X"); break;
         case "N": case "V": { const col=c==="N"?"#6ac0e0":"#d0a060"; wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-6,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,col); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffe24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",cxv,sy+9); break; }
