@@ -133,9 +133,10 @@
     .dbtn.empty { background:none; box-shadow:none; cursor:default; }
     .field-actions { display:flex; gap:8px; max-width:300px; margin:10px auto 0; }
     /* 導入ストーリー */
-    #intro, #navi-select { position:fixed; inset:0; z-index:60; background:rgba(6,4,12,0.95); display:flex; align-items:center; justify-content:center; padding:24px; overflow:auto; }
-    #intro .box, #navi-select .box { max-width:460px; background:linear-gradient(#241d33,#15101f); border:1px solid var(--gold); border-radius:14px; padding:20px; }
-    #intro h2, #navi-select h2 { color:var(--gold); font-size:1.1rem; text-align:center; letter-spacing:0.1em; margin:0 0 12px; }
+    #intro, #navi-select, #title { position:fixed; inset:0; z-index:60; background:rgba(6,4,12,0.95); display:flex; align-items:center; justify-content:center; padding:24px; overflow:auto; }
+    #title { z-index:62; background:radial-gradient(1200px 700px at 50% -10%, rgba(150,110,210,0.35), transparent 60%), linear-gradient(180deg,#171327,#0a0a14); }
+    #intro .box, #navi-select .box, #title .box { max-width:460px; background:linear-gradient(#241d33,#15101f); border:1px solid var(--gold); border-radius:14px; padding:20px; }
+    #intro h2, #navi-select h2, #title h2 { color:var(--gold); font-size:1.1rem; text-align:center; letter-spacing:0.1em; margin:0 0 12px; }
     #intro p, #navi-select p { font-size:0.9rem; line-height:1.7; color:#e7def5; margin:0 0 10px; }
     #intro .start { margin-top:8px; }
     .navi-opt { display:flex; gap:12px; align-items:center; width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:8px 0; cursor:pointer; text-align:left; }
@@ -304,6 +305,16 @@
   </div>
 
   <!-- 導入ストーリー -->
+  <div id="title" class="hidden"><div class="box" style="text-align:center;">
+    <div class="crest" style="margin-bottom:2px;">ISEKAI TAMERS</div>
+    <h2 style="font-size:1.4rem;letter-spacing:0.14em;">異世界ダンジョン<br><span style="font-size:0.9rem;color:#b6aec2;">― 塔の調教師 ―</span></h2>
+    <div id="title-btns" style="display:flex;flex-direction:column;gap:10px;margin-top:18px;">
+      <button class="cmd start" id="title-continue">つづきから</button>
+      <button class="cmd" id="title-new">はじめから</button>
+    </div>
+    <div class="sub" id="title-info" style="margin-top:14px;"></div>
+  </div></div>
+
   <div id="intro" class="hidden"><div class="box">
     <h2>― 塔の中の世界 ―</h2>
     <p>フルダイブ型VR世界《アインクラッド・テイマーズ》。ある日、<b>ログアウトが消えた</b>。ここは出られない塔となった。</p>
@@ -709,14 +720,14 @@
       SKILLS["navi_grace"]={name:"ナビヒール",icon:"💞",type:"healAll",healRatio:0.5,mp:12,desc:"ナビの 全体回復",unique:true};
       SKILLS["navi_gale"]={name:"ナビバースト",icon:"🌪️",type:"magicAll",power:1.3,flat:4,mp:12,desc:"ナビの 全体魔法",unique:true};
       const N=[
-        {id:"navi_a",name:"ナビ・烈",t:"imp",c:"#ff6a5a",img:"portrait_00",hp:34,atk:11,def:4,mp:14,sk:["navi_burn","mera"],up:"navi_a2"},
-        {id:"navi_b",name:"ナビ・癒",t:"blob",c:"#6ab0ff",img:"portrait_04",hp:36,atk:8,def:5,mp:18,sk:["navi_grace","heal"],up:"navi_b2"},
-        {id:"navi_c",name:"ナビ・風",t:"ghost",c:"#7ad0a0",img:"portrait_05",hp:32,atk:10,def:4,mp:16,sk:["navi_gale","heavy"],up:"navi_c2"},
+        {id:"navi_a",name:"ナビ・ブレイズ",t:"imp",c:"#ff6a5a",img:"portrait_00",hp:34,atk:11,def:4,mp:14,sk:["navi_burn","mera"],up:"navi_a2"},
+        {id:"navi_b",name:"ナビ・キュア",t:"blob",c:"#6ab0ff",img:"portrait_04",hp:36,atk:8,def:5,mp:18,sk:["navi_grace","heal"],up:"navi_b2"},
+        {id:"navi_c",name:"ナビ・ゲイル",t:"ghost",c:"#7ad0a0",img:"portrait_05",hp:32,atk:10,def:4,mp:16,sk:["navi_gale","heavy"],up:"navi_c2"},
       ];
       const N2=[
-        {id:"navi_a2",name:"ナビ・覇炎",t:"imp",c:"#ff3a2a",img:"portrait_00",hp:70,atk:19,def:8,mp:24,sk:["navi_burn","merazoma","mera"]},
-        {id:"navi_b2",name:"ナビ・聖光",t:"lich",c:"#3a8aff",img:"portrait_04",hp:74,atk:14,def:9,mp:30,sk:["navi_grace","behomara","behoimi"]},
-        {id:"navi_c2",name:"ナビ・颶風",t:"ghost",c:"#3ac080",img:"portrait_05",hp:66,atk:17,def:7,mp:26,sk:["navi_gale","gigaslash","heavy"]},
+        {id:"navi_a2",name:"ナビ・インフェルノ",t:"imp",c:"#ff3a2a",img:"portrait_00",hp:70,atk:19,def:8,mp:24,sk:["navi_burn","merazoma","mera"]},
+        {id:"navi_b2",name:"ナビ・セラフ",t:"lich",c:"#3a8aff",img:"portrait_04",hp:74,atk:14,def:9,mp:30,sk:["navi_grace","behomara","behoimi"]},
+        {id:"navi_c2",name:"ナビ・テンペスト",t:"ghost",c:"#3ac080",img:"portrait_05",hp:66,atk:17,def:7,mp:26,sk:["navi_gale","gigaslash","heavy"]},
       ];
       [...N,...N2].forEach(n=>{ SPECIES[n.id]={ name:n.name, face:"🧚", baseHp:n.hp, baseAtk:n.atk, baseDef:n.def, baseMp:n.mp, growth:{hp:n.up?5:9,atk:n.up?3:5,def:n.up?2:4,mp:n.up?4:6}, skills:n.sk.slice(), look:{t:n.t,c:n.c}, baseSpdV:13, navi:true, naviUp:n.up||null, src:"navi" }; SKINS[n.id]="img/"+n.img+".jpg"; });
     })();
@@ -761,9 +772,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
+    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー" }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -1005,7 +1016,7 @@
         const qd=questDone(save.floor||1); const ql=`<div class="sub" style="margin-top:8px;">この層のクエスト：${qd?'<span style="color:#7fe0a0">達成！ボスに挑める</span>':questText(save.floor||1)}</div>`;
         const fl=ql+`<div class="sub" style="margin-top:8px;">層を移動（到達済みのみ）</div><div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-floor="down">◀ 下の層</button><span style="min-width:120px;text-align:center">${floorInfo(save.floor||1).name}</span><button class="small-btn ghost" data-floor="up">上の層 ▶</button></div><div class="sub" style="margin-top:2px;">（最上 ${maxF}層まで）</div>`;
         const story=`<div class="sub" style="margin-top:8px;">ものがたり</div><div style="display:flex;gap:6px;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-story="prologue">プロローグ</button><button class="small-btn ghost" data-story="floor">この層の話</button></div>`;
-        const sv=`<div class="sub" style="margin-top:8px;">セーブ（ふだんは自動保存。手動・引っ越しも可）</div><div style="display:flex;gap:6px;justify-content:center;margin-top:4px;flex-wrap:wrap;"><button class="small-btn" data-save>💾 セーブ</button><button class="small-btn ghost" data-export>書き出し</button><button class="small-btn ghost" data-import>読み込み</button></div>`;
+        const sv=`<div class="sub" style="margin-top:8px;">セーブ（ふだんは自動保存。手動・引っ越しも可）</div><div style="display:flex;gap:6px;justify-content:center;margin-top:4px;flex-wrap:wrap;"><button class="small-btn" data-save>💾 セーブ</button><button class="small-btn ghost" data-export>書き出し</button><button class="small-btn ghost" data-import>読み込み</button><button class="small-btn ghost" data-title>🏠 タイトルへ</button></div>`;
         body.innerHTML=`<div class="monster"><div class="info"><div class="name">${floorInfo(save.floor||1).name}</div><div class="stats" style="margin-top:6px;">所持金： <span style="color:#f0d060">${save.gold||0} G</span>　ジェム： <span style="color:var(--gem)">${save.gems||0}</span></div>${sv}${fl}${story}${av}<div style="margin-top:10px;display:flex;gap:8px;"><button class="small-btn ghost" data-mute>${save.muted?"音 OFF":"音 ON"}</button><button class="small-btn ghost" data-reset>さいしょから</button></div></div></div>`;
       }
     }
@@ -1079,11 +1090,10 @@
     function advanceDlg(){ if(!dlgOpen)return; SFX.select&&SFX.select(); dlg.i++; if(dlg.i>=dlg.lines.length){ dlgOpen=false; document.getElementById("dialogue").classList.add("hidden"); const cb=dlg.onDone; dlg=null; if(cb)cb(); } else showDlgLine(); }
     const PROLOGUE_STORY=[ {n:"ナビ",t:"フルダイブ型VR世界《アインクラッド・テイマーズ》。ある日、ログアウトが 消えた。"}, {n:"ナビ",t:"きみは 剣を持てない【調教師（テイマー）】。契約した魔物だけが きみのために 戦う。"}, {n:"ナビ",t:"各層の ボスを 倒して 上へ。30層の頂上をめざし、脱出の刻を 信じて。"} ];
     const STORY_FLOOR={
-      1:[ {n:"ナビ",t:"あ、起きた！ ようこそ、塔の世界《アインクラッド・テイマーズ》へ。"},
-          {n:"ナビ",t:"わたしはナビ。きみの相棒みたいなもの。よろしくね。"},
-          {n:"ナビ",t:"ログアウトは……まだ できない。でも 上を目指せば きっと 道は ある。"},
-          {n:"ナビ",t:"きみは 剣を持てない【調教師】。でも 契約した魔物が きみのために 戦ってくれる。"},
-          {n:"ナビ",t:"まず 街で 仲間を ととのえて、塔の門から ダンジョンへ。層ボスを たおせば 上へ いけるよ！"} ],
+      1:[ {n:"ナビ",t:"ここは 塔の世界《アインクラッド・テイマーズ》。30の層が 積み重なる、出られない 牢獄。"},
+          {n:"ナビ",t:"ログアウトは……まだ できない。でも 頂上まで のぼれば、きっと 帰る道が ある。わたしは そう 信じてる。"},
+          {n:"ナビ",t:"まず この街で 仲間を ととのえよう。フィールドで 魔物と 戦い、配合で 強い血を つなぐ。"},
+          {n:"ナビ",t:"各層の“試練”を こなすと、ダンジョン奥の 層ボスへの 扉が ひらく。倒せば——上の層へ。さあ、いこう！"} ],
       2:[ {n:"ナビ",t:"ここは第2層《水郷の街》。水路が きれいでしょ。"},
           {n:"ナビ",t:"魔物も 少し手強くなる。配合で 強い個体を つくると いいかも。"} ],
       3:[ {n:"ナビ",t:"第3層《灼熱の街》……あつい。魔物も 気が荒いみたい。"},
@@ -1331,7 +1341,7 @@
       const av=AVATARS[save.avatar]||AVATARS.hero;
       wctx.fillStyle="rgba(10,8,18,0.35)"; wctx.beginPath(); wctx.ellipse(psx,psy+13,11,4,0,0,7); wctx.fill();
       const aim=getImg(av.img);
-      if(aim){ const w=28,h=28; wctx.imageSmoothingEnabled=false; if(world.faceLeft){ wctx.save(); wctx.translate(psx,0); wctx.scale(-1,1); wctx.drawImage(aim, -w/2, psy-h+7, w, h); wctx.restore(); } else { wctx.drawImage(aim, psx-w/2, psy-h+7, w, h); } }
+      if(aim){ const w=33,h=33; wctx.imageSmoothingEnabled=false; if(world.faceLeft){ wctx.save(); wctx.translate(psx,0); wctx.scale(-1,1); wctx.drawImage(aim, -w/2, psy-h+8, w, h); wctx.restore(); } else { wctx.drawImage(aim, psx-w/2, psy-h+8, w, h); } }
       else { // 画像読み込み前のフォールバック
         wctx.fillStyle=av.c; wctx.beginPath(); wctx.arc(psx,psy,9,0,7); wctx.fill();
         wctx.fillStyle="#f0d8b0"; wctx.beginPath(); wctx.arc(psx,psy-3,5,0,7); wctx.fill();
@@ -1359,7 +1369,7 @@
       if(overlay){ // 2パス目：建物/オブジェクト画像を“後描き”（隣タイルで欠けないように）
         const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c), person="NVP".includes(c); let dw,dh;
           if(big){ dw=TS*2.0; dh=dw*ih/iw; if(dh>TS*2.8){dh=TS*2.8;dw=dh*iw/ih;} }
-          else if(person){ dh=TS*1.25; dw=dh*iw/ih; } // 人は高さ統一（やや小さめ）
+          else if(person){ dh=TS*1.05; dw=dh*iw/ih; } // 人は高さ統一（小さめ・主人公と同サイズ感）
           else { dw=TS; dh=dw*ih/iw; if(dh>TS*1.8){dh=TS*1.8;dw=dh*iw/ih;} }
           wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); }
         return; }
@@ -1674,11 +1684,13 @@
     document.getElementById("world-menu").addEventListener("click",()=>showMenu());
     document.getElementById("menu-close").addEventListener("click",()=>{ document.getElementById("menu-overlay").classList.add("hidden"); if(world&&world.area==="town"){ syncParty(); world.party.forEach(healFull); } showWorld(); });
     document.querySelectorAll(".mtab").forEach(b=>b.addEventListener("click",()=>{ menuTab=b.dataset.mt; renderMenu(); }));
-    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
+    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const tt=e.target.closest("button[data-title]"); if(tt){ if(confirm("タイトルに もどりますか？\n（オートセーブ済み。未保存の 進行が あれば 念のため 先に 💾セーブを）")){ persist(); document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; showTitle(); } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
     document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); if(!save.navi){ renderNaviSelect(); document.getElementById("navi-select").classList.remove("hidden"); } else { save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); } });
     const NAVI_OPT=[ {k:"navi_a",sys:"攻撃タイプ",d:"炎の魔法が 得意。ガンガン 攻める 相棒。"}, {k:"navi_b",sys:"回復タイプ",d:"全体回復が 得意。粘り強く 戦える 相棒。"}, {k:"navi_c",sys:"バランスタイプ",d:"全体魔法と 物理を こなす 万能な 相棒。"} ];
     function renderNaviSelect(){ const box=document.getElementById("navi-options"); box.innerHTML=""; NAVI_OPT.forEach(o=>{ const sp=SPECIES[o.k]; const b=document.createElement("button"); b.className="navi-opt"; b.innerHTML=`<img src="${SKINS[o.k]}" alt=""><div><div class="nv-n">${sp.name}（${o.sys}）</div><div class="nv-d">${o.d}</div></div>`; b.addEventListener("click",()=>applyNavi(o.k)); box.appendChild(b); }); }
-    function applyNavi(key){ const m=newMember(key,1); save.box.unshift(m); if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid].concat((save.partyUids||[]).filter(u=>u!==m.uid)).slice(0,MAX_PARTY); save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); } runDialogue(floorStory(1).concat(questBrief(1))); }
+    function applyNavi(key){ const m=newMember(key,1); save.box.unshift(m); if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid].concat((save.partyUids||[]).filter(u=>u!==m.uid)).slice(0,MAX_PARTY); save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); }
+      const nm=save.heroName||"テイマー"; const intro=[ {n:"ナビ",t:`……${nm}。${nm}、聞こえる？ よかった、目を 覚ましたんだね！`}, {n:"ナビ",t:`わたしは“${SPECIES[key].name}”——みんなは “ナビ” って 呼ぶ。きみと 契約した 相棒の 魔物だよ。これから ずっと 一緒だ。`}, {n:"ナビ",t:"きみは 剣を 持てない【調教師】。でも 心配いらない——わたしたち 魔物が、きみの ために 戦うから。"} ];
+      runDialogue(intro.concat(floorStory(1)).concat(questBrief(1))); }
     document.getElementById("dialogue").addEventListener("click",advanceDlg);
     document.getElementById("go-fuse").addEventListener("click",()=>{ fuseSel=[]; showFuse(); renderFuse(); });
     document.getElementById("go-gacha").addEventListener("click",()=>{ showGacha(); });
@@ -1710,8 +1722,21 @@
     document.getElementById("back").addEventListener("click",()=>{ const f=pendingResult; pendingResult=null; el.result.classList.add("hidden"); if(f)f(); else showWorld(); });
     document.getElementById("reset").addEventListener("click",()=>{ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); renderTown(); } });
 
-    enterArea("town", save.floor||1);
-    if(!save.introSeen){ document.getElementById("intro").classList.remove("hidden"); }
+    // ===== タイトル/オープニング =====
+    const HAS_SAVE = !!(()=>{ try{ return localStorage.getItem(SAVE_KEY); }catch(e){ return null; } })();
+    function showTitle(){ hideScreens&&hideScreens(); worldLoopOn=false; document.getElementById("intro").classList.add("hidden"); document.getElementById("navi-select").classList.add("hidden"); document.getElementById("menu-overlay")&&document.getElementById("menu-overlay").classList.add("hidden");
+      const cont=document.getElementById("title-continue"); const has=!!(()=>{try{return localStorage.getItem(SAVE_KEY);}catch(e){return null;}})();
+      cont.disabled=!has; cont.style.opacity=has?"1":"0.45";
+      document.getElementById("title-info").textContent = has? `つづき：${(save.heroName||"テイマー")}／第${save.floor||1}層` : "セーブデータは ありません。「はじめから」で 始めよう。";
+      document.getElementById("title").classList.remove("hidden"); audioInit&&audioInit(); }
+    function askHeroName(){ let nm=""; for(let i=0;i<3;i++){ const inp=prompt("主人公の 名前を いれてね（ひらがな・カタカナ・英字、4文字まで）",""); if(inp===null){ nm=""; break; } const t=inp.trim(); if(/^[ぁ-んゟァ-ヺーーa-zA-Z]{1,4}$/.test(t)){ nm=t; break; } alert("4文字までの ひらがな/カタカナ/英字で 入れてね。"); } return nm||"テイマー"; }
+    function startNewGame(){ save=defaultSave(); save.heroName=askHeroName(); persist(); document.getElementById("title").classList.add("hidden"); enterArea("town",1); document.getElementById("intro").classList.remove("hidden"); }
+    function continueGame(){ document.getElementById("title").classList.add("hidden"); enterArea("town", save.floor||1); if(!save.introSeen){ document.getElementById("intro").classList.remove("hidden"); } }
+    document.getElementById("title-new").addEventListener("click",()=>{ if(confirm("⚠️ はじめから 始めると、いまの セーブデータは 消えて 元に戻せません。\n\nよろしいですか？")){ startNewGame(); } });
+    document.getElementById("title-continue").addEventListener("click",()=>{ if(!document.getElementById("title-continue").disabled) continueGame(); });
+
+    enterArea("town", save.floor||1); // 内部初期化（裏で用意）
+    showTitle(); // 起動時はタイトルを表示
   </script>
 </body>
 </html>
