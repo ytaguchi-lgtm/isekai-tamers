@@ -133,11 +133,14 @@
     .dbtn.empty { background:none; box-shadow:none; cursor:default; }
     .field-actions { display:flex; gap:8px; max-width:300px; margin:10px auto 0; }
     /* 導入ストーリー */
-    #intro { position:fixed; inset:0; z-index:60; background:rgba(6,4,12,0.95); display:flex; align-items:center; justify-content:center; padding:24px; }
-    #intro .box { max-width:440px; background:linear-gradient(#241d33,#15101f); border:1px solid var(--gold); border-radius:14px; padding:20px; }
-    #intro h2 { color:var(--gold); font-size:1.1rem; text-align:center; letter-spacing:0.1em; margin:0 0 12px; }
-    #intro p { font-size:0.9rem; line-height:1.7; color:#e7def5; margin:0 0 10px; }
+    #intro, #navi-select { position:fixed; inset:0; z-index:60; background:rgba(6,4,12,0.95); display:flex; align-items:center; justify-content:center; padding:24px; overflow:auto; }
+    #intro .box, #navi-select .box { max-width:460px; background:linear-gradient(#241d33,#15101f); border:1px solid var(--gold); border-radius:14px; padding:20px; }
+    #intro h2, #navi-select h2 { color:var(--gold); font-size:1.1rem; text-align:center; letter-spacing:0.1em; margin:0 0 12px; }
+    #intro p, #navi-select p { font-size:0.9rem; line-height:1.7; color:#e7def5; margin:0 0 10px; }
     #intro .start { margin-top:8px; }
+    .navi-opt { display:flex; gap:12px; align-items:center; width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin:8px 0; cursor:pointer; text-align:left; }
+    .navi-opt img { width:54px; height:72px; object-fit:cover; object-position:top; border-radius:8px; border:1px solid var(--gold); }
+    .navi-opt .nv-n { color:var(--gold); font-weight:bold; } .navi-opt .nv-d { font-size:0.78rem; color:#d8d0e6; }
     /* 歩ける世界（キャンバス） */
     #world-head{ display:none; } /* 探索中は名前/HP/タイトルを出さない（すっきり表示） */
     #world-hint{ display:none !important; }
@@ -307,6 +310,12 @@
     <p>剣を持たぬ君は【<b>調教師（テイマー）</b>】。自らは戦えない。だが、<b>契約した魔物</b>たちが君のために牙をむく。</p>
     <p>街で魔物を育て、フィールドを駆け、<b>各層のボスを倒して 上の層へ</b>。いつか最上層へ——脱出の刻を信じて。</p>
     <button class="cmd start" id="intro-start">塔へ 踏みだす</button>
+  </div></div>
+
+  <div id="navi-select" class="hidden"><div class="box">
+    <h2>― 相棒（ナビ）を えらぶ ―</h2>
+    <p>目を覚ました君のそばに、小さな妖精のような魔物“<b>ナビ</b>”がいた。最初の相棒だ。<br>3体のうち、共に塔へ挑む1体を選ぼう（あとから配合で系譜を伸ばせる）。</p>
+    <div id="navi-options"></div>
   </div></div>
 
   <div id="gacha-flash" class="hidden"><div class="rays"></div><div class="flash-emoji">✨</div><div class="flash-text">レア！</div><div class="tap">タップで けっか</div></div>
@@ -482,6 +491,8 @@
       "lich+kingslime":"seraph","wraith+kingslime":"seraph","lich+gryphon":"seraph",
       "titan+behemoth":"behemoth","gryphon+hydra":"bahamut","behemoth+behemoth":"titan",
     };
+    // ナビ系譜：起点はピクシー(fairy)の系列でのみ生まれる＋ナビ同士で進化（分岐）
+    Object.assign(COMBINE,{ "bat+fairy":"navi_a", "fairy+slime":"navi_b", "fairy+fairy":"navi_c", "imp+fairy":"navi_a", "fairy+myco":"navi_b", "fairy+wisp":"navi_c", "navi_a+navi_a":"navi_a2", "navi_b+navi_b":"navi_b2", "navi_c+navi_c":"navi_c2" });
     function comboKey(a,b){ return [a,b].sort().join("+"); }
     // 属性クロス（特定の属性組み合わせ→別属性）。無い組み合わせは強い親の属性
     const ELE_CROSS={ "df":"d","dh":"n","di":"d","dn":"d","dt":"d","dw":"d","fh":"h","fi":"t","fn":"f","ft":"t","fw":"f","hi":"h","hn":"h","ht":"t","hw":"w","in":"i","it":"i","iw":"i","nt":"t","nw":"w","tw":"w" };
@@ -692,6 +703,23 @@
         SKINS[u.id]="img/"+u.img+".png"; if(typeof GACHA_MON!=="undefined")GACHA_MON.push(u.id);
       });
     })();
+    /* ===== ナビ：3種から選ぶ初期の相棒。起点はピクシー系譜のみ。分岐あり ===== */
+    (function genNavi(){
+      SKILLS["navi_burn"]={name:"ナビフレア",icon:"🔥",type:"magic",power:1.7,flat:6,mp:10,desc:"ナビの 攻撃魔法",unique:true};
+      SKILLS["navi_grace"]={name:"ナビヒール",icon:"💞",type:"healAll",healRatio:0.5,mp:12,desc:"ナビの 全体回復",unique:true};
+      SKILLS["navi_gale"]={name:"ナビバースト",icon:"🌪️",type:"magicAll",power:1.3,flat:4,mp:12,desc:"ナビの 全体魔法",unique:true};
+      const N=[
+        {id:"navi_a",name:"ナビ・烈",t:"imp",c:"#ff6a5a",img:"portrait_00",hp:34,atk:11,def:4,mp:14,sk:["navi_burn","mera"],up:"navi_a2"},
+        {id:"navi_b",name:"ナビ・癒",t:"blob",c:"#6ab0ff",img:"portrait_04",hp:36,atk:8,def:5,mp:18,sk:["navi_grace","heal"],up:"navi_b2"},
+        {id:"navi_c",name:"ナビ・風",t:"ghost",c:"#7ad0a0",img:"portrait_05",hp:32,atk:10,def:4,mp:16,sk:["navi_gale","heavy"],up:"navi_c2"},
+      ];
+      const N2=[
+        {id:"navi_a2",name:"ナビ・覇炎",t:"imp",c:"#ff3a2a",img:"portrait_00",hp:70,atk:19,def:8,mp:24,sk:["navi_burn","merazoma","mera"]},
+        {id:"navi_b2",name:"ナビ・聖光",t:"lich",c:"#3a8aff",img:"portrait_04",hp:74,atk:14,def:9,mp:30,sk:["navi_grace","behomara","behoimi"]},
+        {id:"navi_c2",name:"ナビ・颶風",t:"ghost",c:"#3ac080",img:"portrait_05",hp:66,atk:17,def:7,mp:26,sk:["navi_gale","gigaslash","heavy"]},
+      ];
+      [...N,...N2].forEach(n=>{ SPECIES[n.id]={ name:n.name, face:"🧚", baseHp:n.hp, baseAtk:n.atk, baseDef:n.def, baseMp:n.mp, growth:{hp:n.up?5:9,atk:n.up?3:5,def:n.up?2:4,mp:n.up?4:6}, skills:n.sk.slice(), look:{t:n.t,c:n.c}, baseSpdV:13, navi:true, naviUp:n.up||null, src:"navi" }; SKINS[n.id]="img/"+n.img+".jpg"; });
+    })();
     const SLOT_LABEL = { weapon:"ぶき", armor:"よろい", acc:"アクセ" };
     const SLOT_ICON = { weapon:"⚔️", armor:"🛡️", acc:"💍" };
     const SELL_VALUE = { common:15, rare:60, epic:180 }; // ゴールド
@@ -733,9 +761,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
+    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -1044,7 +1072,7 @@
     // 立ち絵は“主要キャラ”の会話のみ表示。左右で向かい合う
     const PORTRAIT_MAIN={ "ナビ":0,"カイ":1,"管理者":2,"ミラ":3,"塔の声":2 };
     const PORTRAIT_SIDE={ "ナビ":"left","ミラ":"left","カイ":"right","管理者":"right","塔の声":"right" };
-    function portraitFor(name){ if(!name)return null; return PORTRAIT_MAIN[name]!=null?PORTRAIT_FILES[PORTRAIT_MAIN[name]]:null; }
+    function portraitFor(name){ if(!name)return null; if(name==="ナビ"&&save&&save.navi&&SKINS[save.navi])return SKINS[save.navi]; return PORTRAIT_MAIN[name]!=null?PORTRAIT_FILES[PORTRAIT_MAIN[name]]:null; }
     function runDialogue(lines, onDone){ if(!lines||!lines.length){ if(onDone)onDone(); return; } dlg={lines,i:0,onDone}; dlgOpen=true; document.getElementById("dialogue").classList.remove("hidden"); showDlgLine(); }
     function showDlgLine(){ const l=dlg.lines[dlg.i]; const nm=(typeof l==="object")?l.n:""; const tx=(typeof l==="object")?l.t:l; const ne=document.getElementById("dlg-name"); ne.textContent=nm||""; ne.style.display=nm?"block":"none"; document.getElementById("dlg-text").textContent=tx;
       const p=portraitFor(nm); const pe=document.getElementById("dlg-portrait"); if(pe){ if(p){ if(pe.getAttribute("src")!==p)pe.src=p; pe.className=(PORTRAIT_SIDE[nm]||"left"); } else pe.className="hidden"; } }
@@ -1647,7 +1675,10 @@
     document.getElementById("menu-close").addEventListener("click",()=>{ document.getElementById("menu-overlay").classList.add("hidden"); if(world&&world.area==="town"){ syncParty(); world.party.forEach(healFull); } showWorld(); });
     document.querySelectorAll(".mtab").forEach(b=>b.addEventListener("click",()=>{ menuTab=b.dataset.mt; renderMenu(); }));
     document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
-    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); audioInit(); audioResume(); curBGM=null; playBGM("town"); });
+    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); if(!save.navi){ renderNaviSelect(); document.getElementById("navi-select").classList.remove("hidden"); } else { save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); } });
+    const NAVI_OPT=[ {k:"navi_a",sys:"攻撃タイプ",d:"炎の魔法が 得意。ガンガン 攻める 相棒。"}, {k:"navi_b",sys:"回復タイプ",d:"全体回復が 得意。粘り強く 戦える 相棒。"}, {k:"navi_c",sys:"バランスタイプ",d:"全体魔法と 物理を こなす 万能な 相棒。"} ];
+    function renderNaviSelect(){ const box=document.getElementById("navi-options"); box.innerHTML=""; NAVI_OPT.forEach(o=>{ const sp=SPECIES[o.k]; const b=document.createElement("button"); b.className="navi-opt"; b.innerHTML=`<img src="${SKINS[o.k]}" alt=""><div><div class="nv-n">${sp.name}（${o.sys}）</div><div class="nv-d">${o.d}</div></div>`; b.addEventListener("click",()=>applyNavi(o.k)); box.appendChild(b); }); }
+    function applyNavi(key){ const m=newMember(key,1); save.box.unshift(m); if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid].concat((save.partyUids||[]).filter(u=>u!==m.uid)).slice(0,MAX_PARTY); save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); } runDialogue(floorStory(1).concat(questBrief(1))); }
     document.getElementById("dialogue").addEventListener("click",advanceDlg);
     document.getElementById("go-fuse").addEventListener("click",()=>{ fuseSel=[]; showFuse(); renderFuse(); });
     document.getElementById("go-gacha").addEventListener("click",()=>{ showGacha(); });
