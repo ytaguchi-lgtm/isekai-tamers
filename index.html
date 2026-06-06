@@ -60,7 +60,7 @@
     .ecard { position:relative; overflow:hidden; border-radius:12px; padding:2px; }
     .ecard.dead { opacity:0.45; } .ecard.shake { animation:shake 0.3s; }
     .ecard.selectable { outline:2px dashed var(--gold); outline-offset:2px; }
-    .ecard .ec-label { text-align:center; font-size:0.66rem; color:#ffb3b3; margin-top:-4px; }
+    .ecard .ec-label { text-align:center; font-size:0.64rem; color:#ffb3b3; margin-top:-2px; max-width:84px; line-height:1.15; word-break:break-word; }
     .mon-spr { width:72px; height:72px; } .mon-spr-s { width:48px; height:48px; }
     .selectable { outline:2px dashed var(--gold); outline-offset:1px; cursor:pointer; }
     @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
@@ -1122,7 +1122,7 @@
         const c=document.createElement("div"); c.className="ecard"+(e.hp<=0?" dead":"")+(sel?" selectable":""); c.dataset.eti=i;
         const cv=document.createElement("canvas"); cv.width=72; cv.height=72; cv.className="mon-spr";
         c.appendChild(cv); if(e.hp>0) drawMonster(cv.getContext("2d"),e.speciesId,72,e.isBoss); else { const x=cv.getContext("2d"); x.fillStyle="#888"; x.font="28px sans-serif"; x.textAlign="center"; x.fillText("×",36,46); }
-        const est=statusMark(e); if(e.label||est){ const lb=document.createElement("div"); lb.className="ec-label"; lb.textContent=(e.label||"")+(est?" "+est:""); c.appendChild(lb); }
+        const est=statusMark(e); const lb=document.createElement("div"); lb.className="ec-label"; lb.textContent=enLabel(e)+(est?" "+est:""); c.appendChild(lb);
         el.enemyList.appendChild(c); });
       // 味方（姿＋自分のHP/MP）
       el.allyList.innerHTML="";
