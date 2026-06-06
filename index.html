@@ -76,6 +76,8 @@
     .acard .abar-wrap { background:#00000066; border-radius:5px; height:5px; overflow:hidden; margin-top:2px; } .acard .abar { height:100%; background:var(--hp-green); }
     /* 攻撃エフェクト */
     .fx { position:absolute; inset:0; pointer-events:none; border-radius:inherit; animation:fxfade .32s ease-out; }
+    .fx-spr { position:absolute; left:-8%; top:-8%; width:116%; height:116%; object-fit:contain; pointer-events:none; z-index:3; animation:fxpop .36s ease-out forwards; }
+    @keyframes fxpop { 0%{opacity:0;transform:scale(0.6) rotate(-8deg);} 25%{opacity:1;} 70%{opacity:1;transform:scale(1.05);} 100%{opacity:0;transform:scale(1.1);} }
     .fx.phys { background:radial-gradient(circle,#ffffffcc,transparent 70%); }
     .fx.crit { background:radial-gradient(circle,#ffd24aee,transparent 72%); }
     .fx.mag  { background:radial-gradient(circle,#ff9a6acc,transparent 70%); }
@@ -90,7 +92,9 @@
     @keyframes btOut { from{opacity:1;background:#0a0a14;} to{opacity:0;background:#0a0a14;} }
     /* 会話 */
     #dialogue { position:fixed; inset:0; z-index:58; display:flex; align-items:flex-end; justify-content:center; padding:16px; }
-    #dlg-portrait { position:absolute; bottom:96px; left:50%; transform:translateX(-50%); width:min(86vw,420px); max-height:62vh; object-fit:contain; object-position:bottom; filter:drop-shadow(0 6px 16px rgba(0,0,0,0.6)); pointer-events:none; }
+    #dlg-portrait { position:absolute; bottom:104px; width:min(34vw,148px); height:min(34vh,208px); object-fit:cover; object-position:top center; border-radius:12px; border:2px solid var(--gold); box-shadow:0 6px 16px rgba(0,0,0,0.55); background:#1a1426; pointer-events:none; }
+    #dlg-portrait.left { left:10px; }
+    #dlg-portrait.right { right:10px; transform:scaleX(-1); }
     #dialogue .dlg-box { width:100%; max-width:460px; background:linear-gradient(#1c1830,#120e1f); border:2px solid var(--gold); border-radius:14px; padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,0.6); cursor:pointer; }
     #dialogue .dlg-name { color:var(--gold); font-size:0.92rem; margin-bottom:6px; font-weight:bold; }
     #dialogue .dlg-text { font-size:1.0rem; line-height:1.7; color:#f3efe6; min-height:3.4em; }
@@ -223,10 +227,9 @@
   <div id="screen-shop" class="screen hidden">
     <div class="banner"><span style="color:#f0d060">💰 <span id="gold-count2">0</span></span></div>
     <div class="sub">武器屋 ― ゴールドで 売り買い</div>
-    <div class="inv-title">かう</div>
+    <div class="menu-tabs" style="grid-template-columns:1fr 1fr;"><button class="mtab on" data-shoptab="buy">かう</button><button class="mtab" data-shoptab="sell">うる</button></div>
     <div id="shop-buy"></div>
-    <div class="inv-title">うる（もちものの 装備）</div>
-    <div id="shop-sell"></div>
+    <div id="shop-sell" class="hidden"></div>
     <button class="cmd sub2" id="shop-back" style="margin-top:14px;">← もどる</button>
   </div>
 
@@ -664,7 +667,7 @@
     const SLOT_ICON = { weapon:"⚔️", armor:"🛡️", acc:"💍" };
     const SELL_VALUE = { common:15, rare:60, epic:180 }; // ゴールド
     function sellValue(it){ return SELL_VALUE[it.tier]||10; }
-    const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=30, PULL10_COST=270, FUSE_MIN_LV=10;
+    const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=60, PULL10_COST=540, FUSE_MIN_LV=10;
     function effLabel(e){ return ({crit:"ときどき会心(2倍)",guard:"被ダメ20%減",drain:"与ダメの30%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回",dodge:"22%で 攻撃を かわす",manaflow:"毎ターン MP+5",berserk:"ピンチほど 攻撃UP(最大+60%)"})[e]||""; }
     function tierClass(t){ return t==="epic"?"epic":(t==="rare"?"rare":""); }
 
@@ -704,7 +707,7 @@
     function showEquip(){ hideScreens(); screenEquip.classList.remove("hidden"); setTint(TINT_TOWN); playBGM("town"); }
     function showFuse(){ hideScreens(); screenFuse.classList.remove("hidden"); fuseMode="fuse"; setTint(TINT_FUSE); playBGM("town"); }
     function showGacha(){ hideScreens(); screenGacha.classList.remove("hidden"); setTint(TINT_GACHA); renderGacha(); playBGM("town"); }
-    function showShop(){ hideScreens(); screenShop.classList.remove("hidden"); setTint(TINT_TOWN); renderShop(); playBGM("town"); }
+    function showShop(){ hideScreens(); screenShop.classList.remove("hidden"); setTint(TINT_TOWN); document.getElementById("shop-buy").classList.remove("hidden"); document.getElementById("shop-sell").classList.add("hidden"); document.querySelectorAll("#screen-shop .mtab").forEach(b=>b.classList.toggle("on",b.dataset.shoptab==="buy")); renderShop(); playBGM("town"); }
     function showDungeon(){ hideScreens(); screenDun.classList.remove("hidden"); }
 
     /* ===== オーディオ（合成BGM＋効果音 / 外部ファイル不要） ===== */
@@ -846,7 +849,7 @@
 
     /* ガチャ */
     function renderGacha(){ document.getElementById("gem-count2").textContent=save.gems||0; document.getElementById("pull1").disabled=(save.gems||0)<PULL1_COST; document.getElementById("pull10").disabled=(save.gems||0)<PULL10_COST; }
-    function rollRarity(){ const r=Math.random(); if(r<0.06)return"epic"; if(r<0.30)return"rare"; return"common"; }
+    function rollRarity(){ const r=Math.random(); if(r<0.035)return"epic"; if(r<0.20)return"rare"; return"common"; }
     function gachaLevel(){ return Math.max(1,Math.min(12,Math.floor((save.bestDepth||0)/2)+1)); }
     function randOf(a){ return a[Math.floor(Math.random()*a.length)]; }
     function newAvatar(){ const owned=save.avatars||[]; const avail=Object.keys(AVATARS).filter(k=>!owned.includes(k)); return avail.length?randOf(avail):null; }
@@ -872,8 +875,8 @@
 
     /* ===== 武器屋（ゴールドで売買） ===== */
     const SHOP_BUY=[
-      {id:"bronzeSword",price:45},{id:"leather",price:40},{id:"powerRing",price:35},{id:"guardAmu",price:35},{id:"speedRing",price:50},
-      {id:"ironSword",price:220},{id:"iceBlade",price:260},{id:"scaleArmor",price:240},{id:"ironArmor",price:280},
+      {id:"bronzeSword",price:120},{id:"leather",price:110},{id:"powerRing",price:140},{id:"guardAmu",price:140},{id:"speedRing",price:190},
+      {id:"ironSword",price:560},{id:"iceBlade",price:640},{id:"scaleArmor",price:600},{id:"ironArmor",price:700},
     ];
     function renderShop(){
       document.getElementById("gold-count2").textContent=save.gold||0;
@@ -993,12 +996,14 @@
     let world=null, pendingResult=null, worldLoopOn=false, menuOpen=false, rafStarted=false;
     /* ===== 会話エンジン＆ストーリー ===== */
     let dlg=null, dlgOpen=false;
-    const PORTRAIT_FILES=Array.from({length:20},(_,i)=>`img/portrait_${String(i).padStart(2,"0")}.jpg`);
-    const PORTRAIT_FIXED={ "ナビ":0,"カイ":1,"管理者":2,"ミラ":3,"塔の声":2 };
-    function portraitFor(name){ if(!name||name==="???"||name==="あなた")return null; let idx; if(PORTRAIT_FIXED[name]!=null)idx=PORTRAIT_FIXED[name]; else { let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; idx=4+(h%(PORTRAIT_FILES.length-4)); } return PORTRAIT_FILES[idx%PORTRAIT_FILES.length]; }
+    const PORTRAIT_FILES=Array.from({length:25},(_,i)=>`img/portrait_${String(i).padStart(2,"0")}.jpg`);
+    // 立ち絵は“主要キャラ”の会話のみ表示。左右で向かい合う
+    const PORTRAIT_MAIN={ "ナビ":0,"カイ":1,"管理者":2,"ミラ":3,"塔の声":2 };
+    const PORTRAIT_SIDE={ "ナビ":"left","ミラ":"left","カイ":"right","管理者":"right","塔の声":"right" };
+    function portraitFor(name){ if(!name)return null; return PORTRAIT_MAIN[name]!=null?PORTRAIT_FILES[PORTRAIT_MAIN[name]]:null; }
     function runDialogue(lines, onDone){ if(!lines||!lines.length){ if(onDone)onDone(); return; } dlg={lines,i:0,onDone}; dlgOpen=true; document.getElementById("dialogue").classList.remove("hidden"); showDlgLine(); }
     function showDlgLine(){ const l=dlg.lines[dlg.i]; const nm=(typeof l==="object")?l.n:""; const tx=(typeof l==="object")?l.t:l; const ne=document.getElementById("dlg-name"); ne.textContent=nm||""; ne.style.display=nm?"block":"none"; document.getElementById("dlg-text").textContent=tx;
-      const p=portraitFor(nm); const pe=document.getElementById("dlg-portrait"); if(pe){ if(p){ if(pe.getAttribute("src")!==p)pe.src=p; pe.classList.remove("hidden"); } else pe.classList.add("hidden"); } }
+      const p=portraitFor(nm); const pe=document.getElementById("dlg-portrait"); if(pe){ if(p){ if(pe.getAttribute("src")!==p)pe.src=p; pe.className=(PORTRAIT_SIDE[nm]||"left"); } else pe.className="hidden"; } }
     function advanceDlg(){ if(!dlgOpen)return; SFX.select&&SFX.select(); dlg.i++; if(dlg.i>=dlg.lines.length){ dlgOpen=false; document.getElementById("dialogue").classList.add("hidden"); const cb=dlg.onDone; dlg=null; if(cb)cb(); } else showDlgLine(); }
     const PROLOGUE_STORY=[ {n:"ナビ",t:"フルダイブ型VR世界《アインクラッド・テイマーズ》。ある日、ログアウトが 消えた。"}, {n:"ナビ",t:"きみは 剣を持てない【調教師（テイマー）】。契約した魔物だけが きみのために 戦う。"}, {n:"ナビ",t:"各層の ボスを 倒して 上へ。30層の頂上をめざし、脱出の刻を 信じて。"} ];
     const STORY_FLOOR={
@@ -1128,14 +1133,18 @@
     }
     // ===== フィールド：海に囲まれた草原・砂浜・木立・池＋街ゲート＋ダンジョン洞窟 =====
     function buildField(floor){
-      const W=24,H=18; const g=[];
+      const W=30,H=22; const g=[];
       for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++){ let c="g"; if(x<=1||y<=1||x>=W-2||y>=H-2)c="w"; else if(x<=2||y<=2||x>=W-3||y>=H-3)c="s"; row.push(c);} g.push(row); }
-      [[6,5],[7,5],[6,6],[7,6],[8,6],[16,6],[17,6],[16,7],[10,12],[11,12],[12,12],[18,13],[19,13]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="t"; }); // 木立
-      for(let y=8;y<=10;y++)for(let x=13;x<=15;x++) if(g[y]&&g[y][x]==="g")g[y][x]="w"; // 池
-      [[14,11],[15,8]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="s"; }); // 池の砂辺
-      g[H-3][5]="T";   // 街ゲート（下）
-      g[3][18]="D";    // ダンジョン洞窟（右上）
-      return {grid:g,W,H,spawn:{x:5,y:H-4}};
+      // 木立（数か所のかたまり）
+      [[6,5],[7,5],[6,6],[7,6],[8,6],[7,7], [20,6],[21,6],[22,6],[20,7],[21,7], [11,14],[12,14],[13,14],[12,15], [24,15],[25,15],[24,16], [16,18],[17,18]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="t"; });
+      for(let y=9;y<=12;y++)for(let x=15;x<=18;x++) if(g[y]&&g[y][x]==="g")g[y][x]="w"; // 池
+      [[14,10],[19,10],[16,13]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="s"; });
+      // 石畳の道（街ゲート↔洞窟をゆるく繋ぐ）
+      for(let x=5;x<=24;x++) if(g[H-5]&&g[H-5][x]==="g")g[H-5][x]="p";
+      for(let y=4;y<=H-5;y++) if(g[y]&&g[y][24]==="g")g[y][24]="p";
+      g[H-4][5]="T";   // 街ゲート（下・道沿い）
+      g[3][24]="D";    // ダンジョン洞窟（右上・道の先）
+      return {grid:g,W,H,spawn:{x:6,y:H-5}};
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function buildDungeon(floor){
@@ -1246,15 +1255,29 @@
       return            {g:"#6a4a6a",g2:"#7a5a7a",w:"#5a3a6a",s:"#8a6a7a",d:"#241826",d2:"#322236",sky:"#3a2a4a"}; // 魔界/終局
     }
     function battleSceneBg(f){ const t=floorTheme(f); return `linear-gradient(180deg, ${t.sky} 0%, ${t.sky} 48%, ${t.g} 48%, ${t.g2} 100%)`; }
+    // 実マップタイル割当（層テーマで地形が変化）。building/門/宝箱は別描画
+    function groundImgFor(c){ const f=(world&&world.floor)||1; const band=f<=4?0:f<=8?1:f<=12?2:f<=16?3:f<=20?4:f<=24?5:6;
+      const G=["sogen_01","tsuchi_01","tsuchi_02","setsugen","sogen_02","sogen_hana_01","dokunuma"];
+      const W=["mizu","mizu","yogan","hyojo","mizu","mizu","dokunuma"];
+      const P=["ishizukuri_gray_01","ishizukuri_brown_01","ishizukuri_brown_01","ishizukuri_gray_01","dairiseki_white","dairiseki_white","dairiseki_black"];
+      const m={ g:G[band], w:W[band], p:P[band], s:"sabaku", ".":"renga_gray_01", "#":"ganpeki_gray", r:"ganpeki_koseki_blue" };
+      return m[c]?("img/maptile_"+m[c]+".png"):null; }
     function drawTile(c,sx,sy,town,tx,ty,overlay){
       const h=(((tx||0)*73856093)^((ty||0)*19349663))>>>0; const rb=(n)=>((h>>(n*4))&15); const th=floorTheme(world.floor);
       if(overlay){ // 2パス目：建物/オブジェクト画像を“後描き”（隣タイルで欠けないように）
-        const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c); let dw=big?TS*2.0:TS; let dh=dw*ih/iw; const maxh=big?TS*2.8:TS*1.8; if(dh>maxh){ dh=maxh; dw=dh*iw/ih; } wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); }
+        const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c), person="NV".includes(c); let dw,dh;
+          if(big){ dw=TS*2.0; dh=dw*ih/iw; if(dh>TS*2.8){dh=TS*2.8;dw=dh*iw/ih;} }
+          else if(person){ dh=TS*1.55; dw=dh*iw/ih; } // 人は高さ統一
+          else { dw=TS; dh=dw*ih/iw; if(dh>TS*1.8){dh=TS*1.8;dw=dh*iw/ih;} }
+          wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); }
         return; }
-      // 地面ベース（草/床）を全タイルの下地に（層テーマ色）
+      // 地面ベース（層テーマ色＝画像読込前のフォールバック）
       if(town){ wctx.fillStyle=th.g; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.g2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); }
       else { wctx.fillStyle=th.d; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.d2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); }
-      if(getImg(TILE_IMG[c])){ return; } // 画像タイルは地面だけ描いて、本体は2パス目に回す
+      // 実マップタイル：まず下地（草/床）→ そのタイル固有の地形
+      const baseG = groundImgFor(town?"g":"."); const bim=baseG&&getImg(baseG); if(bim)wctx.drawImage(bim,sx,sy,TS,TS);
+      const gi=groundImgFor(c); if(gi){ const im=getImg(gi); if(im){ if(gi!==baseG)wctx.drawImage(im,sx,sy,TS,TS); return; } }
+      if(getImg(TILE_IMG[c])){ return; } // 建物画像は2パス目に回す（地面は描き済み）
       const cxv=sx+TS/2;
       const blob=(x,y,r,col)=>{ wctx.fillStyle=col; wctx.beginPath(); wctx.arc(x,y,r,0,7); wctx.fill(); };
       const house=(wall,roof,label)=>{ wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.fillRect(sx+5,sy+TS-6,TS-10,5); wctx.fillStyle=wall; wctx.fillRect(sx+5,sy+13,TS-10,TS-15); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(sx+TS-1,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="rgba(255,255,255,0.18)"; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(cxv,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(cxv-3,sy+19,6,9); wctx.fillStyle="#bfe0ff"; wctx.fillRect(sx+7,sy+16,4,4); wctx.fillRect(sx+TS-11,sy+16,4,4); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-1); };
@@ -1398,7 +1421,9 @@
     }
     function shakeEnemy(i){ const c=el.enemyList.children[i]; if(c){c.classList.add("shake");setTimeout(()=>c.classList.remove("shake"),300);} }
     function shakeAlly(i){ const c=el.allyList.children[i]; if(c){c.classList.add("shake");setTimeout(()=>c.classList.remove("shake"),300);} }
-    function flashFx(card,kind){ if(!card)return; const f=document.createElement("div"); f.className="fx "+(kind||"phys"); card.appendChild(f); setTimeout(()=>{ if(f.parentNode)f.parentNode.removeChild(f); },330); }
+    const FX_SPR={ phys:"kogeki_cut_01", heavy:"kogeki_cut_02", crit:"kogeki_cut_02", gigaslash:"kogeki_cut_02", magic:"kogeki_hit_01", fire:"kogeki_hit_01", ice:"kogeki_hit_01", thunder:"kogeki_hit_01", io:"kogeki_hit_01", poison:"doku_purple" };
+    function flashFx(card,kind){ if(!card)return; const f=document.createElement("div"); f.className="fx "+(kind||"phys"); card.appendChild(f); setTimeout(()=>{ if(f.parentNode)f.parentNode.removeChild(f); },330);
+      const spr=FX_SPR[kind]; if(spr){ const im=document.createElement("img"); im.src="img/"+spr+".png"; im.className="fx-spr"; card.appendChild(im); setTimeout(()=>{ if(im.parentNode)im.parentNode.removeChild(im); },360); } }
     function flashEnemy(i,kind){ flashFx(el.enemyList.children[i],kind); }
     function flashAlly(i,kind){ flashFx(el.allyList.children[i],kind); }
     function showCommands(){ el.commands.classList.remove("hidden"); el.skillPanel.classList.add("hidden"); el.itemPanel.classList.add("hidden"); el.targetWrap.classList.add("hidden"); el.floorClear.classList.add("hidden"); el.result.classList.add("hidden"); el.turnHint.classList.remove("hidden"); }
@@ -1564,6 +1589,7 @@
     document.getElementById("gacha-back").addEventListener("click",showWorld);
     document.getElementById("go-shop").addEventListener("click",()=>{ showShop(); });
     document.getElementById("shop-back").addEventListener("click",showWorld);
+    document.querySelector("#screen-shop .menu-tabs").addEventListener("click",(e)=>{ const t=e.target.closest("button[data-shoptab]"); if(!t)return; document.querySelectorAll("#screen-shop .mtab").forEach(b=>b.classList.toggle("on",b===t)); const buy=t.dataset.shoptab==="buy"; document.getElementById("shop-buy").classList.toggle("hidden",!buy); document.getElementById("shop-sell").classList.toggle("hidden",buy); });
     document.getElementById("shop-buy").addEventListener("click",(e)=>{ const b=e.target.closest("button[data-buy]"); if(b&&!b.disabled)buyItem(b.dataset.buy); });
     document.getElementById("shop-sell").addEventListener("click",(e)=>{ const b=e.target.closest("button[data-sell]"); if(b)sellItem(b.dataset.sell); });
     document.getElementById("mute-btn").addEventListener("click",(e)=>{ e.stopPropagation(); audioInit(); toggleMute(); });
