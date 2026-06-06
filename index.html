@@ -59,6 +59,9 @@
     #enemy-list { display:flex; flex-direction:row; justify-content:center; align-items:flex-end; gap:14px; flex-wrap:wrap; min-height:42vh; margin:8px 0; border-radius:14px; padding:12px 10px 8px; box-shadow:inset 0 0 24px rgba(0,0,0,0.35); border:1px solid var(--line); overflow:hidden; }
     .ecard { position:relative; overflow:hidden; border-radius:12px; padding:2px; }
     .ecard.dead { opacity:0.45; } .ecard.shake { animation:shake 0.3s; }
+    .ecard.cur { outline:3px solid var(--hp-red); outline-offset:1px; border-radius:12px; }
+    #turn-hint { text-align:center; font-size:1.0rem; font-weight:bold; color:#1a1426; background:linear-gradient(#9fe8b0,#5fd97a); border-radius:10px; padding:5px 0; margin:4px 0; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
+    #turn-hint.enemy-turn { background:linear-gradient(#f0a0a0,#e25555); color:#fff; }
     .ecard.selectable { outline:2px dashed var(--gold); outline-offset:2px; }
     .ecard { display:flex; flex-direction:column; align-items:center; }
     .ecard .ec-label { text-align:center; font-size:0.66rem; color:#ffb3b3; margin:0 auto; max-width:138px; line-height:1.15; word-break:break-word; }
@@ -92,9 +95,10 @@
     @keyframes btOut { from{opacity:1;background:#0a0a14;} to{opacity:0;background:#0a0a14;} }
     /* 会話 */
     #dialogue { position:fixed; inset:0; z-index:58; display:flex; align-items:flex-end; justify-content:center; padding:16px; }
-    #dlg-portrait { position:absolute; bottom:104px; width:min(34vw,148px); height:min(34vh,208px); object-fit:cover; object-position:top center; border-radius:12px; border:2px solid var(--gold); box-shadow:0 6px 16px rgba(0,0,0,0.55); background:#1a1426; pointer-events:none; }
-    #dlg-portrait.left { left:10px; }
-    #dlg-portrait.right { right:10px; transform:scaleX(-1); }
+    #dialogue .dlg-box { margin-bottom:2px; }
+    #dlg-portrait { position:absolute; bottom:150px; width:min(28vw,120px); height:min(26vh,150px); object-fit:cover; object-position:top center; border-radius:12px; border:2px solid var(--gold); box-shadow:0 6px 16px rgba(0,0,0,0.55); background:#1a1426; pointer-events:none; }
+    #dlg-portrait.left { left:12px; }
+    #dlg-portrait.right { right:12px; transform:scaleX(-1); }
     #dialogue .dlg-box { width:100%; max-width:460px; background:linear-gradient(#1c1830,#120e1f); border:2px solid var(--gold); border-radius:14px; padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,0.6); cursor:pointer; }
     #dialogue .dlg-name { color:var(--gold); font-size:0.92rem; margin-bottom:6px; font-weight:bold; }
     #dialogue .dlg-text { font-size:1.0rem; line-height:1.7; color:#f3efe6; min-height:3.4em; }
@@ -772,9 +776,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
+    function defaultSave(){ const box=[newMember("fairy")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:"fairy", fieldEvent:{}, heroName:"テイマー", delivery:null, dstate:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -885,6 +889,13 @@
       if(!confirm(`${it.icon}${it.name} を うって 💰${v}G を てにいれますか？${it.kind==="equip"?"\n（だれかが そうび中なら はずれます）":""}`))return;
       save.box.forEach(mem=>{ ["weapon","armor","acc"].forEach(s=>{ if(mem.equip[s]===uid)mem.equip[s]=null; }); if(mem.book===uid)mem.book=null; });
       save.inventory=save.inventory.filter(x=>x.uid!==uid); save.gold=(save.gold||0)+v; SFX.buy&&SFX.buy(); persist(); if(!screenShop.classList.contains("hidden"))renderShop(); else renderEquip(); }
+    function useFieldHeal(){ const ps=(world&&world.party)||[]; const alive=ps.filter(a=>a.hp>0); if(!alive.length){ alert("回復できる 仲間が いない。"); return; }
+      let caster=null, sk=null; alive.forEach(a=>{ (a.skills||[]).forEach(sid=>{ const s=SKILLS[sid]; if(s&&(s.type==="heal"||s.type==="healAll")&&a.mp>=s.mp){ if(!sk || (s.type==="healAll"&&sk.type!=="healAll")){ caster=a; sk=s; } } }); });
+      if(!sk){ alert("いま 使える 回復スキルが ない（MP不足 など）。宿屋で 休もう。"); return; }
+      caster.mp-=sk.mp; const hb=1+(avatarPas().heal||0);
+      if(sk.type==="healAll"){ ps.forEach(a=>{ if(a.hp>0)a.hp=Math.min(a.maxHp,a.hp+Math.round(a.maxHp*sk.healRatio*hb)); }); }
+      else { const t=alive.slice().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]; if(t)t.hp=Math.min(t.maxHp,t.hp+Math.round(t.maxHp*sk.healRatio*hb)); }
+      persist(); SFX.heal&&SFX.heal(); renderMenu(); showToast(`${caster.name}の ${sk.name}！ 回復した（MP-${sk.mp}）`); }
     function useFieldItem(cid){ const it=CONSUM[cid]; if(!it||(save.consumables[cid]||0)<=0)return; const ps=(world&&world.party)?world.party:[]; if(!ps.length){alert("つかう 対象が いない。");return;}
       if(it.revive){ const dead=ps.filter(a=>a.hp<=0); if(!dead.length){alert("たおれている なかまは いない。");return;} const t=dead[0]; t.hp=t.maxHp; t.mp=t.maxMp; }
       else { const names=ps.map((a,i)=>`${i+1}: ${a.name} HP${Math.max(0,a.hp)}/${a.maxHp} MP${a.mp}/${a.maxMp}`).join("\n"); let idx=parseInt(prompt(`${it.name}を だれに つかう？ 番号：\n${names}`,"1"),10); if(!(idx>=1&&idx<=ps.length))return; const t=ps[idx-1]; if(it.heal)t.hp=Math.min(t.maxHp,t.hp+it.heal); if(it.mp)t.mp=Math.min(t.maxMp,t.mp+it.mp); }
@@ -985,7 +996,7 @@
       document.querySelectorAll(".mtab").forEach(b=>b.classList.toggle("on",b.dataset.mt===menuTab));
       const body=document.getElementById("menu-body");
       if(menuTab==="party"){
-        body.innerHTML=`<div class="sub">手持ち（連れている ${save.partyUids.length}/${MAX_PARTY}体）　控えの管理・入れ替えは <b>配合所</b> で</div>`;
+        body.innerHTML=`<div class="sub">手持ち（連れている ${save.partyUids.length}/${MAX_PARTY}体）　控えの管理・入れ替えは <b>配合所</b> で</div><div style="text-align:center;margin:4px 0 8px;"><button class="small-btn" data-fieldheal>🌿 回復スキルを つかう（MP消費）</button></div>`;
         save.partyUids.forEach(uid=>{ const m=findMember(uid); if(!m)return; const t=totalStats(m),s=SPECIES[m.speciesId]; const c=document.createElement("div"); c.className="monster party-on";
           c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="stats">攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}</div></div><button class="small-btn ghost" data-equip="${m.uid}">装備変更</button></div>`;
           body.appendChild(c); });
@@ -1083,7 +1094,7 @@
     // 立ち絵は“主要キャラ”の会話のみ表示。左右で向かい合う
     const PORTRAIT_MAIN={ "ナビ":0,"カイ":1,"管理者":2,"ミラ":3,"塔の声":2 };
     const PORTRAIT_SIDE={ "ナビ":"left","ミラ":"left","カイ":"right","管理者":"right","塔の声":"right" };
-    function portraitFor(name){ if(!name)return null; if(name==="ナビ"&&save&&save.navi&&SKINS[save.navi])return SKINS[save.navi]; return PORTRAIT_MAIN[name]!=null?PORTRAIT_FILES[PORTRAIT_MAIN[name]]:null; }
+    function portraitFor(name){ if(!name)return null; if(name==="ナビ")return "img/portrait_05.jpg"; if(name==="試験官"||name==="受付")return null; return PORTRAIT_MAIN[name]!=null?PORTRAIT_FILES[PORTRAIT_MAIN[name]]:null; }
     function runDialogue(lines, onDone){ if(!lines||!lines.length){ if(onDone)onDone(); return; } dlg={lines,i:0,onDone}; dlgOpen=true; document.getElementById("dialogue").classList.remove("hidden"); showDlgLine(); }
     function showDlgLine(){ const l=dlg.lines[dlg.i]; const nm=(typeof l==="object")?l.n:""; const tx=(typeof l==="object")?l.t:l; const ne=document.getElementById("dlg-name"); ne.textContent=nm||""; ne.style.display=nm?"block":"none"; document.getElementById("dlg-text").textContent=tx;
       const p=portraitFor(nm); const pe=document.getElementById("dlg-portrait"); if(pe){ if(p){ if(pe.getAttribute("src")!==p)pe.src=p; pe.className=(PORTRAIT_SIDE[nm]||"left"); } else pe.className="hidden"; } }
@@ -1204,8 +1215,9 @@
       return milestone?milestone.concat(base):base;
     }
     function npcGuideStory(){ const f=world.floor; const p=questProg(f);
-      if(!p.accepted){ p.accepted=true; persist(); showToast("📜 依頼を 受注した！  "+questText(f)); return [ {n:"受付",t:"ようこそ。この層の 依頼（試練）を つたえるね。"} ].concat(questBrief(f)).concat([ {n:"受付",t:"進み具合は ≡メニューでも 確認できるよ。武運を！" } ]); }
-      const qline=questDone(f)?"試練は 達成済み！ ダンジョン奥の 層ボスに 挑めるよ。":("依頼の のこり → "+questText(f)); return [ {n:"受付",t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できるよ。"}, {n:"受付",t:qline}, {n:"受付",t:"宿屋に 入れば HP・MP 全回復。むりせず もどっておいで。"} ]; }
+      if(!p.accepted){ p.accepted=true; persist(); showToast("📜 依頼を 受注した！  "+questText(f)); return [ {n:"受付",t:"ようこそ。この層の 依頼（試練）を つたえるね。"} ].concat(questBrief(f)).concat([ {n:"受付",t:"終わったら ここに 報告に きてね。武運を！" } ]); }
+      if(questDone(f) && !p.reported){ p.reported=true; persist(); SFX.fanfare&&SFX.fanfare(); showToast("✅ 依頼 達成を 報告！ ボスへの 道が ひらいた"); return questDoneStory(f).concat([ {n:"受付",t:`よくぞ 試練を 果たした、${save.heroName||"テイマー"}！ これで ダンジョン奥の 扉が ひらく。`}, {n:"受付",t:"その先の“層の主”を たおせば、上の層へ。気を つけて！" } ]); }
+      const qline=p.reported?"報告は すんでる。ダンジョン奥の 層ボスに 挑めるよ！":(questDone(f)?"依頼 達成！ わたしに『報告』して くれれば 道が ひらくよ。":("依頼の のこり → "+questText(f))); return [ {n:"受付",t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できるよ。"}, {n:"受付",t:qline}, {n:"受付",t:"宿屋に 入れば HP・MP 全回復。むりせず もどっておいで。"} ]; }
     function npcVillagerStory(f){ const fi=floorInfo(f); const pool=[ `${fi.town}も 物騒に なった…。魔物が 増えてな。`, `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `この街の 子が ダンジョンに 入ったきりでね…無事だと いいが。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば 全回復。むりは しなさんな。`, `早く 外の 世界に 帰りたい。…あんたなら、やれるかもな。`, `受付で 依頼を 受けてから ダンジョンへ 行くんだぞ。` ]; return [ {n:"村人",t:pool[f%pool.length]}, {n:"村人",t:pool[(f*3+2)%pool.length]} ]; }
     function travelerTalk(){ const f=world.floor;
       if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
@@ -1288,6 +1300,8 @@
       // 宝物庫（施錠扉Lの先・鍵が必要）
       room(8,18,4,3); vc(12,18,10); g[15][10]="L"; g[19][9]="C";
       if(floorHasRescue(floor)){ const rc=cen(R[7]); if(g[rc.y]&&g[rc.y][rc.x]===".")g[rc.y][rc.x]="M"; } // 救出対象
+      // 既に開けた宝箱/扉/救出済みは復活させない（保存状態を反映）
+      const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(c==="C"&&st.chest&&st.chest[x+","+y])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
       return {grid:g,W,H,spawn:cen(R[0])};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
@@ -1346,7 +1360,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ const f=world.floor; if(!questProg(f).accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:"街の 受付（案内人）で 話を 聞いて、依頼を 受けてから 挑もう。"} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } const go=()=>{ if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }; const p=questProg(f); if(!p.toldDone){ p.toldDone=true; persist(); runDialogue(questDoneStory(f), go); } else go(); }
+      else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:"街の 受付で 話を 聞いて、依頼を 受けてから 挑もう。"} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:"街の 受付に もどって『報告』しよう。そうすれば 道が ひらくはず！" } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
@@ -1507,7 +1521,7 @@
       // 敵（モンスターの姿のみ。HP/レベルは非表示）
       el.enemyList.innerHTML="";
       run.enemies.forEach((e,i)=>{ const sel=awaiting&&awaiting.side==="enemy"&&e.hp>0;
-        const c=document.createElement("div"); c.className="ecard"+(e.hp<=0?" dead":"")+(sel?" selectable":""); c.dataset.eti=i;
+        const c=document.createElement("div"); c.className="ecard"+(e.hp<=0?" dead":"")+(sel?" selectable":"")+((phase==="enemy"&&run.cur===e&&e.hp>0)?" cur":""); c.dataset.eti=i;
         const cv=document.createElement("canvas"); cv.width=132; cv.height=132; cv.className="mon-spr";
         c.appendChild(cv); if(e.hp>0) drawMonster(cv.getContext("2d"),e.speciesId,132,e.isBoss); else { const x=cv.getContext("2d"); x.fillStyle="#888"; x.font="48px sans-serif"; x.textAlign="center"; x.fillText("×",66,82); }
         const est=statusMark(e); const lb=document.createElement("div"); lb.className="ec-label"; lb.textContent=enLabel(e)+(est?" "+est:""); c.appendChild(lb);
@@ -1602,8 +1616,8 @@
       // ねむり：行動できない
       if(st.sleep>0){ st.sleep--; phase=isAlly(u)?"player":"enemy"; renderBattle(); el.turnHint.innerHTML=`▶ ${u.name}`; log(`${u.name}は ねむっている…💤`); run.turnIdx++; setTimeout(nextTurn,750); return; }
       const rg=regenTick(u);
-      if(isAlly(u)){ run.cur=u; phase="player"; renderBattle(); showCommands(); busy=false; el.turnHint.innerHTML=`▶ ${u.name} の ばん`; log(`${rg?regenPre(rg):""}コマンドを えらんでください。`); }
-      else { phase="enemy"; busy=true; renderBattle(); enemyAct(u).then(()=>{ run.turnIdx++; nextTurn(); }); }
+      if(isAlly(u)){ run.cur=u; phase="player"; renderBattle(); showCommands(); busy=false; el.turnHint.classList.remove("enemy-turn"); el.turnHint.classList.remove("hidden"); el.turnHint.innerHTML=`🟢 ${u.name} の ターン！`; log(`${rg?regenPre(rg):""}コマンドを えらんでください。`); }
+      else { phase="enemy"; busy=true; run.cur=u; renderBattle(); el.turnHint.classList.remove("hidden"); el.turnHint.classList.add("enemy-turn"); el.turnHint.innerHTML=`🔴 ${u.name} の ターン`; enemyAct(u).then(()=>{ run.turnIdx++; nextTurn(); }); }
     }
     function curActor(){ return run.cur; }
     function afterAct(){ run.turnIdx++; nextTurn(); }
@@ -1702,16 +1716,18 @@
     const ENCH=[ {ef:"crit",pre:"かいしんの",ic:"⚔️"},{ef:"guard",pre:"まもりの",ic:"🛡️"},{ef:"drain",pre:"きゅうけつの",ic:"⚔️"},{ef:"regen",pre:"いやしの",ic:"💍"},{ef:"twin",pre:"れんげきの",ic:"⚔️"} ];
     function rollEnchant(floor){ const e=ENCH[Math.floor(Math.random()*ENCH.length)]; const slot=(e.ef==="guard")?"armor":(e.ef==="regen"?"acc":"weapon"); const b=2+Math.floor((floor||1)/3); const it={uid:newUid("it"),id:"ench_"+(enchCounter++),tmplId:null,kind:"equip",name:e.pre+(slot==="weapon"?"つるぎ":slot==="armor"?"よろい":"おまもり"),icon:e.ic,slot,tier:"epic",effect:e.ef,ench:true,atk:0,def:0,hp:0,spd:0}; if(slot==="weapon")it.atk=4+b; else if(slot==="armor"){it.def=3+b;it.hp=b*2;} else {it.def=2+b;it.spd=2;} return it; }
     function gridHas(ch){ if(!world||!world.grid)return false; for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]===ch)return true; return false; }
+    function dstateFor(f){ if(!save.dstate)save.dstate={}; if(!save.dstate[f])save.dstate[f]={chest:{},door:0,resc:0}; if(!save.dstate[f].chest)save.dstate[f].chest={}; return save.dstate[f]; }
     function collectChest(tx,ty){ world.grid[ty][tx]="."; const gold=20+Math.floor(Math.random()*30)+(world.floor*3); save.gold=(save.gold||0)+gold; let extra=""; if(Math.random()<0.45){ const it=rollEnchant(world.floor); save.inventory.push(it); extra=` ＋ ${it.icon}${it.name}（エンチャント）`; } else { const d=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); save.inventory.push(d); extra=` ＋ ${d.icon}${d.name}`; }
       if(!world.hasKey && gridHas("L")){ world.hasKey=true; extra+=" ＋ 🔑ふしぎな鍵（施錠扉を あけられる）"; }
+      if(world.area==="dungeon"){ dstateFor(world.floor).chest[tx+","+ty]=1; }
       persist(); SFX.buy&&SFX.buy(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); alert(`📦 宝箱を 開けた！ 💰+${gold}G${extra}`); }
     const CAPTIVE={ 4:{n:"ミラ",t:["…たすけて くれて ありがとう。あなたの 魔物さん、つよいね。","お母さんの ところへ 帰れる…！ この恩は 忘れません。"]}, 9:{n:"猟師の仲間",t:["うう…吹雪で 動けなかった…。助かった、恩に着る。","『凍らぬ炎』、きみが 持っていけ。きっと 役に立つ。"]} };
     function rescueEvent(){ const f=world.floor; const cap=CAPTIVE[f]; const who=cap?cap.n:["旅のテイマー","行商人","迷子の子","見習い騎士","祠の巫女"][f%5];
       const lines=cap?cap.t.map(t=>({n:cap.n,t})):[{n:who,t:"うう…助かった…！ もう だめかと 思った。"},{n:who,t:"恩に着る。これ、わずかだけど 受け取って くれ。"}];
       for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="M")world.grid[y][x]=".";
-      const gem=2+Math.floor(f/3); save.gems=(save.gems||0)+gem; addRescue(f); persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden");
+      const gem=2+Math.floor(f/3); save.gems=(save.gems||0)+gem; addRescue(f); dstateFor(f).resc=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden");
       runDialogue([{n:"ナビ",t:"檻に 誰か 囚われてる…！ 助けよう！"}].concat(lines).concat([{n:"ナビ",t:`救出 成功！（💎+${gem}）`}])); }
-    function openLockedDoor(){ if(world.hasKey){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; world.hasKey=false; actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("🔑 鍵で 扉を 開けた！ 奥に 宝物庫が…！"); } else { runDialogue([{n:"ナビ",t:"固く 施錠されてる…。どこかに『鍵』が あるはず。宝箱を 探そう。"}]); } }
+    function openLockedDoor(){ if(world.hasKey){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; world.hasKey=false; dstateFor(world.floor).door=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("🔑 鍵で 扉を 開けた！ 奥に 宝物庫が…！"); } else { runDialogue([{n:"ナビ",t:"固く 施錠されてる…。どこかに『鍵』が あるはず。宝箱を 探そう。"}]); } }
     function confirmFlee(){ if(run.context==="boss"){ log("層ボスからは にげられない！"); return; } if(confirm("にげて フィールドに もどりますか？\n（このせんとうの 戦利品は もらえません）")){ returnToField(); } }
 
     function endRun(wiped){ busy=true; hideAllPanels(); if(run.deepestCleared>(save.bestDepth||0))save.bestDepth=run.deepestCleared;
@@ -1730,8 +1746,10 @@
     document.getElementById("world-menu").addEventListener("click",()=>showMenu());
     document.getElementById("menu-close").addEventListener("click",()=>{ document.getElementById("menu-overlay").classList.add("hidden"); if(world&&world.area==="town"){ syncParty(); world.party.forEach(healFull); } showWorld(); });
     document.querySelectorAll(".mtab").forEach(b=>b.addEventListener("click",()=>{ menuTab=b.dataset.mt; renderMenu(); }));
-    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const tt=e.target.closest("button[data-title]"); if(tt){ if(confirm("タイトルに もどりますか？\n（オートセーブ済み。未保存の 進行が あれば 念のため 先に 💾セーブを）")){ persist(); document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; showTitle(); } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
-    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); if(!save.navi){ renderNaviSelect(); document.getElementById("navi-select").classList.remove("hidden"); } else { save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); } });
+    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const fh=e.target.closest("button[data-fieldheal]"); if(fh){ useFieldHeal(); return;} const tt=e.target.closest("button[data-title]"); if(tt){ if(confirm("タイトルに もどりますか？\n（オートセーブ済み。未保存の 進行が あれば 念のため 先に 💾セーブを）")){ persist(); document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; showTitle(); } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
+    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); if(world){ syncParty(); world.party.forEach(healFull); }
+      const nm=save.heroName||"テイマー";
+      runDialogue([ {n:"ナビ",t:`……${nm}。${nm}、聞こえる？ よかった、目を 覚ましたんだね！`}, {n:"ナビ",t:"わたしは“ナビ”——きみの 相棒の 妖精、ピクシーだよ。これから ずっと 一緒だ。"}, {n:"ナビ",t:"きみは 剣を 持てない【調教師】。でも 心配いらない。わたしたち 魔物が、きみの ために 戦うから。"} ].concat(floorStory(1)).concat([{n:"ナビ",t:"まずは 街の 受付（試験官）に 話しかけて、依頼（実技試験）を 受けよう！"}])); });
     const NAVI_OPT=[ {k:"navi_a",sys:"攻撃タイプ",d:"炎の魔法が 得意。ガンガン 攻める 相棒。"}, {k:"navi_b",sys:"回復タイプ",d:"全体回復が 得意。粘り強く 戦える 相棒。"}, {k:"navi_c",sys:"バランスタイプ",d:"全体魔法と 物理を こなす 万能な 相棒。"} ];
     function renderNaviSelect(){ const box=document.getElementById("navi-options"); box.innerHTML=""; NAVI_OPT.forEach(o=>{ const sp=SPECIES[o.k]; const b=document.createElement("button"); b.className="navi-opt"; b.innerHTML=`<img src="${SKINS[o.k]}" alt=""><div><div class="nv-n">${sp.name}（${o.sys}）</div><div class="nv-d">${o.d}</div></div>`; b.addEventListener("click",()=>applyNavi(o.k)); box.appendChild(b); }); }
     function applyNavi(key){ const m=newMember(key,1); save.box.unshift(m); if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid].concat((save.partyUids||[]).filter(u=>u!==m.uid)).slice(0,MAX_PARTY); save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); }
