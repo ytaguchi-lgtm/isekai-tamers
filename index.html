@@ -56,12 +56,12 @@
     .reset-btn { display:block; margin:18px auto 0; background:none; border:1px solid var(--line); color:#9a90ad; border-radius:8px; padding:6px 14px; font-size:0.78rem; font-family:inherit; cursor:pointer; }
     .floor-tag { text-align:center; font-size:1.05rem; color:var(--gold); margin:4px 0 6px; letter-spacing:0.12em; } .floor-tag .boss { color:#ff8a8a; }
     /* 敵リスト */
-    #enemy-list { display:flex; flex-direction:row; justify-content:center; align-items:flex-end; gap:12px; flex-wrap:wrap; min-height:120px; margin:6px 0; }
+    #enemy-list { display:flex; flex-direction:row; justify-content:center; align-items:flex-end; gap:12px; flex-wrap:wrap; min-height:150px; margin:10px 0; }
     .ecard { position:relative; overflow:hidden; border-radius:12px; padding:2px; }
     .ecard.dead { opacity:0.45; } .ecard.shake { animation:shake 0.3s; }
     .ecard.selectable { outline:2px dashed var(--gold); outline-offset:2px; }
     .ecard .ec-label { text-align:center; font-size:0.64rem; color:#ffb3b3; margin-top:-2px; max-width:84px; line-height:1.15; word-break:break-word; }
-    .mon-spr { width:108px; height:108px; } .mon-spr-s { width:48px; height:48px; }
+    .mon-spr { width:132px; height:132px; } .mon-spr-s { width:48px; height:48px; }
     .selectable { outline:2px dashed var(--gold); outline-offset:1px; cursor:pointer; }
     @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
     /* 味方リスト */
@@ -135,9 +135,10 @@
     /* 歩ける世界（キャンバス） */
     #world-head{ display:none; } /* 探索中は名前/HP/タイトルを出さない（すっきり表示） */
     #world-hint{ display:none !important; }
+    #world-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%); background:#1a1426e8; border:1px solid var(--gold); color:var(--ink); font-size:0.78rem; padding:6px 12px; border-radius:10px; white-space:nowrap; z-index:5; box-shadow:0 2px 10px #0008; }
     #world-head .fname{ color:var(--gold); letter-spacing:0.06em; }
-    #screen-world{ touch-action:none; overflow:hidden; }
-    #world-stage{ position:relative; width:352px; max-width:94vw; margin:0 auto; touch-action:none; }
+    #screen-world{ touch-action:none; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:100dvh; padding-bottom:8px; }
+    #world-stage{ position:relative; width:min(98vw, 74vh); margin:0 auto; touch-action:none; }
     #world-canvas{ width:100%; height:auto; image-rendering:pixelated; border:1px solid var(--line); border-radius:10px; background:#0c1018; display:block; touch-action:none; pointer-events:none; }
     .round-btn{ position:absolute; top:8px; right:8px; width:42px; height:42px; border-radius:50%; background:#2f2742dd; color:var(--gold); border:1px solid var(--gold); font-size:1.4rem; line-height:1; cursor:pointer; }
     /* 操作パッドは マップの外（下）に配置 */
@@ -265,8 +266,9 @@
   <div id="screen-world" class="screen hidden">
     <div id="world-head"><span class="fname" id="world-name">第1層</span><span id="world-hp"></span></div>
     <div id="world-stage">
-      <canvas id="world-canvas" width="352" height="352"></canvas>
+      <canvas id="world-canvas" width="448" height="448"></canvas>
       <button id="world-menu" class="round-btn">≡</button>
+      <div id="world-toast" class="hidden"></div>
     </div>
     <div id="world-controls">
       <div id="stick"><div id="stick-knob"></div></div>
@@ -667,9 +669,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; return { uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; }
-    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
+    function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -901,7 +903,8 @@
         (save.avatars||["hero"]).forEach(k=>{ const a=AVATARS[k]; if(!a)return; av+=`<button class="small-btn ${save.avatar===k?"":"ghost"}" data-avatar="${k}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;"><img src="${a.img}" style="width:38px;height:38px;object-fit:contain;image-rendering:pixelated;"><span style="font-size:0.66rem;">${a.name}${save.avatar===k?"◀":""}</span></button>`; });
         av+=`</div>`;
         const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1);
-        const fl=`<div class="sub" style="margin-top:8px;">層を移動（到達済みのみ）</div><div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-floor="down">◀ 下の層</button><span style="min-width:120px;text-align:center">${floorInfo(save.floor||1).name}</span><button class="small-btn ghost" data-floor="up">上の層 ▶</button></div><div class="sub" style="margin-top:2px;">（最上 ${maxF}層まで）</div>`;
+        const qd=questDone(save.floor||1); const ql=`<div class="sub" style="margin-top:8px;">この層のクエスト：${qd?'<span style="color:#7fe0a0">達成！ボスに挑める</span>':questText(save.floor||1)}</div>`;
+        const fl=ql+`<div class="sub" style="margin-top:8px;">層を移動（到達済みのみ）</div><div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-floor="down">◀ 下の層</button><span style="min-width:120px;text-align:center">${floorInfo(save.floor||1).name}</span><button class="small-btn ghost" data-floor="up">上の層 ▶</button></div><div class="sub" style="margin-top:2px;">（最上 ${maxF}層まで）</div>`;
         const story=`<div class="sub" style="margin-top:8px;">ものがたり</div><div style="display:flex;gap:6px;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-story="prologue">プロローグ</button><button class="small-btn ghost" data-story="floor">この層の話</button></div>`;
         const sv=`<div class="sub" style="margin-top:8px;">セーブ（ふだんは自動保存。手動・引っ越しも可）</div><div style="display:flex;gap:6px;justify-content:center;margin-top:4px;flex-wrap:wrap;"><button class="small-btn" data-save>💾 セーブ</button><button class="small-btn ghost" data-export>書き出し</button><button class="small-btn ghost" data-import>読み込み</button></div>`;
         body.innerHTML=`<div class="monster"><div class="info"><div class="name">${floorInfo(save.floor||1).name}</div><div class="stats" style="margin-top:6px;">所持金： <span style="color:#f0d060">${save.gold||0} G</span>　ジェム： <span style="color:var(--gem)">${save.gems||0}</span></div>${sv}${fl}${story}${av}<div style="margin-top:10px;display:flex;gap:8px;"><button class="small-btn ghost" data-mute>${save.muted?"音 OFF":"音 ON"}</button><button class="small-btn ghost" data-reset>さいしょから</button></div></div></div>`;
@@ -958,7 +961,7 @@
     function floorInfo(f){ f=Math.max(1,f||1); const t=FLOORS[Math.min(f,FLOORS.length)-1]; return {name:`第${f}層 ${t.town}`, field:t.field, tint:t.tint}; }
     function enemyLevelFor(f){ return Math.max(1, Math.round(f*2.4)); } // 30層で約Lv72。配合を重ねて到達する想定
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
-    const TS=32, VIEW=11; // タイル32px、表示11x11
+    const TS=32, VIEW=14; // タイル32px、表示14x14（画面を広く活用）
     const SOLID_TOWN=new Set(["t","o","w","#","h","I","S","F","G","N","V"]); // 木/噴水/水/壁/家/施設/人に突き当たる
     const SOLID_FIELD=new Set(["w","t"]);
     const SOLID_DUN=new Set(["#","r"]);
@@ -1009,6 +1012,17 @@
           {n:"ナビ",t:"こいつが 最後の敵……！ きみと 魔物たちの 絆、見せてやろう！"} ],
     };
     function floorStory(f){ return STORY_FLOOR[f] || [ {n:"ナビ",t:`第${f}層 ${floorInfo(f).town}に たどりついた。ここまで よく来たね。`}, {n:"ナビ",t:"まだ 上は ある。いこう。"} ]; }
+    /* ===== クエスト：各層の“試練”を こなすと 層ボスに 挑める ===== */
+    function questsForFloor(f){ const huntN=3+Math.floor(f/3); const q=[{type:"hunt",n:huntN}]; if(f>=3)q.push({type:"collect",n:1+(f%2)}); return q; }
+    function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0}; return save.quest[f]; }
+    function questDone(f){ const p=questProg(f); return questsForFloor(f).every(q=> q.type==="hunt"?p.h>=q.n:p.c>=q.n); }
+    function questText(f){ const p=questProg(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️魔物 ${Math.min(p.h,q.n)}/${q.n}`:`📦宝箱 ${Math.min(p.c,q.n)}/${q.n}`).join("　"); }
+    function questBrief(f){ const qs=questsForFloor(f); const lines=qs.map(q=> q.type==="hunt"?`・この層の 魔物を ${q.n}体 たおす`:`・ダンジョンの 宝箱を ${q.n}個 あつめる`).join("\n"); return [ {n:"ナビ",t:"層ボスへの 扉は 固く 閉ざされてる…。この層の “試練” を こなせば ひらくよ。"}, {n:"ナビ",t:"【この層の クエスト】\n"+lines}, {n:"ナビ",t:"フィールド／ダンジョンで こなしてね。達成すると ダンジョン奥の ボスに 挑めるよ！"} ]; }
+    function afterQuest(f,wasDone){ if(!wasDone && questDone(f)){ showToast("✨ クエスト達成！ 層ボスに 挑める！"); SFX.fanfare&&SFX.fanfare(); } else { showToast("クエスト  "+questText(f)); } }
+    function addHunt(f,n){ if(questDone(f))return; const was=questDone(f); questProg(f).h+=(n||1); persist(); afterQuest(f,was); }
+    function addCollect(f){ const was=questDone(f); questProg(f).c+=1; persist(); afterQuest(f,was); }
+    let toastTimer=null;
+    function showToast(msg){ const t=document.getElementById("world-toast"); if(!t)return; t.textContent=msg; t.classList.remove("hidden"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),2600); }
     function bossClearStory(f){
       if(f>=30) return [ {n:"管理者",t:"……みごとだ。きみと 魔物の 絆が、わたしを 上回った。"},
         {n:"ナビ",t:"塔の てっぺんの 扉が ひらいた……！ 外の 光が さしこんでくる！"},
@@ -1016,9 +1030,9 @@
         {n:"ナビ",t:"……でも、まだ 強くなれる。気が すむまで、この世界で 遊んでいこう。【完】"} ];
       return [ {n:"ナビ",t:`第${f}層の ボスを たおした！`}, {n:"ナビ",t:"上の層への 扉が ひらいたよ。一歩ずつ、頂上に ちかづいてる。"} ];
     }
-    function npcGuideStory(){ return [ {n:"あんないの人",t:"武器屋では ゴールドで そうび、ガチャ堂では ジェムで 限定品が 手に入るよ。"}, {n:"あんないの人",t:"配合は Lv10をこえた 魔物どうしで できる。強い血を つないでいこう。"}, {n:"あんないの人",t:"宿屋に 入れば HPもMPも 全回復だ。むりせず もどっておいで。"} ]; }
+    function npcGuideStory(){ const f=world.floor; const qline=questDone(f)?"この層の 試練は 達成済み！ ダンジョン奥の 層ボスに 挑めるぞ。":("層ボスに 挑むには 試練が 必要だ → "+questText(f)); return [ {n:"あんないの人",t:"武器屋では ゴールドで そうび、ガチャ堂では ジェムで 限定品が 手に入るよ。"}, {n:"あんないの人",t:"配合は Lv10をこえた 魔物どうしで できる。配合所では 出撃の 入れ替えも できるぞ。"}, {n:"あんないの人",t:qline}, {n:"あんないの人",t:"宿屋に 入れば HPもMPも 全回復だ。むりせず もどっておいで。"} ]; }
     function npcVillagerStory(f){ return [ {n:"村人",t:"塔の魔物は 倒しても 倒しても わいてくる…。むりは しなさんな。"}, {n:"村人",t:`${floorInfo(f).town}は いいところだろう。……早く 外の世界に 帰りたいがな。`} ]; }
-    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor)); }
+    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor).concat(questBrief(world.floor))); }
     let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null, actionTargetC=null;
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
@@ -1108,11 +1122,11 @@
       let newCtx = tc?(ctxMap[tc]||null):null;
       if(tc==="X") newCtx = world.area==="town" ? "フィールドへ でる" : "フィールドへ もどる";
       if(newCtx!==actionCtx){ actionCtx=newCtx; const ab=document.getElementById("world-action"); if(actionCtx){ ab.textContent=actionCtx; ab.classList.remove("hidden"); } else ab.classList.add("hidden"); }
-      if(here==="C"){ collectChest(tx,ty); }
+      if(here==="C"){ collectChest(tx,ty); addCollect(world.floor); }
       const c=here;
       // エンカウント（ダンジョンの床 / フィールドの草原）
-      if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.2){ world.dist=0; if(Math.random()<0.2) startEncounter(false); } } }
-      else if(world.area==="field" && c==="g"){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.4){ world.dist=0; if(Math.random()<0.14) startEncounter(false); } } }
+      if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.8){ world.dist=0; if(Math.random()<0.10) startEncounter(false); } } }
+      else if(world.area==="field" && c==="g"){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*2.2){ world.dist=0; if(Math.random()<0.07) startEncounter(false); } } }
     }
     function doAction(){
       const c=actionTargetC; if(!c)return;
@@ -1122,7 +1136,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ if(confirm(`${floorInfo(world.floor).name} の 層ボスに いどみますか？`)) startEncounter(true); }
+      else if(c==="B"){ if(!questDone(world.floor)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ この層の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこりクエスト】\n"+questText(world.floor)} ]); return; } if(confirm(`${floorInfo(world.floor).name} の 層ボスに いどみますか？`)) startEncounter(true); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
@@ -1251,8 +1265,8 @@
       el.enemyList.innerHTML="";
       run.enemies.forEach((e,i)=>{ const sel=awaiting&&awaiting.side==="enemy"&&e.hp>0;
         const c=document.createElement("div"); c.className="ecard"+(e.hp<=0?" dead":"")+(sel?" selectable":""); c.dataset.eti=i;
-        const cv=document.createElement("canvas"); cv.width=108; cv.height=108; cv.className="mon-spr";
-        c.appendChild(cv); if(e.hp>0) drawMonster(cv.getContext("2d"),e.speciesId,108,e.isBoss); else { const x=cv.getContext("2d"); x.fillStyle="#888"; x.font="40px sans-serif"; x.textAlign="center"; x.fillText("×",54,66); }
+        const cv=document.createElement("canvas"); cv.width=132; cv.height=132; cv.className="mon-spr";
+        c.appendChild(cv); if(e.hp>0) drawMonster(cv.getContext("2d"),e.speciesId,132,e.isBoss); else { const x=cv.getContext("2d"); x.fillStyle="#888"; x.font="48px sans-serif"; x.textAlign="center"; x.fillText("×",66,82); }
         const est=statusMark(e); const lb=document.createElement("div"); lb.className="ec-label"; lb.textContent=enLabel(e)+(est?" "+est:""); c.appendChild(lb);
         el.enemyList.appendChild(c); });
       // 味方（姿＋自分のHP/MP）
@@ -1415,7 +1429,7 @@
       run.allies.forEach(al=>{ const m=findMember(al.uid); if(!m)return; const before=m.level; m.exp+=exp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}`); refreshAlly(al,m);} });
       const activeUids=new Set(run.allies.map(a=>a.uid)); const benchExp=Math.floor(exp*0.3);
       if(benchExp>0) save.box.forEach(m=>{ if(activeUids.has(m.uid))return; const before=m.level; m.exp+=benchExp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before)ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}(控)`); });
-      drops.forEach(d=>save.inventory.push(d)); save.gold=(save.gold||0)+gold; save.gems=(save.gems||0)+gemGain; handleRecruits(recruits); persist();
+      drops.forEach(d=>save.inventory.push(d)); save.gold=(save.gold||0)+gold; save.gems=(save.gems||0)+gemGain; handleRecruits(recruits); if(!boss) addHunt(run.floor, run.enemies.length); persist();
       let msg=`てきを たおした！ けいけんち+${exp} ／ 💰+${gold}G${gemGain?` ／ 💎+${gemGain}`:""}`;
       if(drops.length)msg+=`<br>📦 ${drops.map(d=>d.icon+d.name).join("、")}`;
       if(recruits.length)msg+=`<br><span class="scout">🤝 ${recruits.map(r=>SPECIES[r.speciesId].name).join("、")} が なかまに！</span>`;
