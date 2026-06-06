@@ -663,11 +663,40 @@
         const aid="gs_"+bi; SKILLS[aid]={name:L.all,icon:L.icon,type:"magicAll",power:1.3,flat:3,mp:14,desc:L.all+"で てき全体"}; ITEMS["gb_"+bi]={kind:"book",name:L.all+"の書",icon:"📖",teach:aid,tier:"epic"}; TIER_POOL.epic.push("gb_"+bi); bi++;
       });
     })();
+    /* ===== ガチャ限定ユニークモンスター20体（固有/複合の署名呪文） ===== */
+    (function genUnique(){
+      const U=[
+        {id:"u_ifrit",name:"イフリート",t:"imp",c:"#ff5a3a",img:"character_monster_devil_red",hp:96,atk:19,def:9,mp:26, sk:{name:"フレイムノヴァ",icon:"🔥",type:"magicAll",power:1.9,flat:8,mp:22,desc:"灼熱の 全体大魔法"}},
+        {id:"u_leviathan",name:"リヴァイアサン",t:"dragon",c:"#3aa0d0",img:"character_monster_dragon_01_blue",hp:104,atk:18,def:10,mp:26, sk:{name:"アビスタイド",icon:"🌊",type:"magicAll",power:1.9,flat:8,mp:22,desc:"深海の 全体大波"}},
+        {id:"u_bahamutex",name:"バハムートEX",t:"dragon",c:"#c89aff",img:"character_monster_dragon_03_purple",hp:110,atk:22,def:10,mp:28, sk:{name:"メガフレア",icon:"☄️",type:"magic",power:3.2,flat:12,mp:24,desc:"単体に 超特大ダメージ"}},
+        {id:"u_titania",name:"ティターニア",t:"ghost",c:"#fff0b0",img:"character_monster_ghost_white",hp:90,atk:16,def:9,mp:30, sk:{name:"セイントレイ",icon:"✨",type:"magicAll",power:1.7,flat:8,mp:20,desc:"聖なる 全体光"}},
+        {id:"u_cerberus",name:"ケルベロス",t:"imp",c:"#8a3a3a",img:"character_monster_gargoyle_purple",hp:100,atk:21,def:9,mp:18, sk:{name:"ヘルバイト",icon:"🐺",type:"phys",power:2.6,mp:14,desc:"3つ首の 連撃"}},
+        {id:"u_fenrir",name:"フェンリル",t:"wolf",c:"#cfe6ff",img:"character_monster_dragon_01_white",hp:98,atk:20,def:9,mp:22, sk:{name:"アイスファング",icon:"❄️",type:"magic",power:2.6,flat:10,mp:18,desc:"氷狼の 牙"}},
+        {id:"u_behemothex",name:"ベヒモスEX",t:"rock",c:"#9a7a4a",img:"character_monster_golem_brown",hp:120,atk:21,def:12,mp:14, sk:{name:"グランドスマッシュ",icon:"💥",type:"phys",power:2.8,mp:16,desc:"大地を 砕く一撃"}},
+        {id:"u_asmodeus",name:"アスモデウス",t:"imp",c:"#7a3a8a",img:"character_monster_devil_purple",hp:100,atk:20,def:10,mp:28, sk:{name:"ダークネビュラ",icon:"🌑",type:"magicAll",power:2.0,flat:9,mp:24,desc:"闇の 全体崩壊"}},
+        {id:"u_garuda",name:"ガルーダ",t:"bat",c:"#8fe0b0",img:"character_monster_dragon_01_green",hp:88,atk:19,def:8,mp:24, sk:{name:"テンペスト",icon:"🌪️",type:"magicAll",power:1.8,flat:7,mp:20,desc:"嵐の 全体斬"}},
+        {id:"u_medusa",name:"メドゥーサ",t:"ghost",c:"#7aa060",img:"character_monster_ghost_black",hp:86,atk:17,def:9,mp:26, sk:{name:"ストーンゲイズ",icon:"🐍",type:"magic",power:2.2,flat:9,mp:18,desc:"石化の 邪眼"}},
+        {id:"u_jormungandr",name:"ヨルムンガンド",t:"dragon",c:"#4caa6a",img:"character_monster_dragon_02_green",hp:112,atk:20,def:11,mp:24, sk:{name:"ワールドエンド",icon:"🐉",type:"magicAll",power:2.2,flat:10,mp:26,desc:"世界蛇の 終焉"}},
+        {id:"u_seraphim",name:"セラフィム",t:"lich",c:"#fff4c0",img:"character_monster_ghost_white",hp:92,atk:15,def:10,mp:32, sk:{name:"ヒールホライズン",icon:"💖",type:"healAll",healRatio:0.9,mp:22,desc:"全体を 大回復"}},
+        {id:"u_nidhogg",name:"ニーズヘッグ",t:"dragon",c:"#9a6ad0",img:"character_monster_dragon_02_purple",hp:104,atk:19,def:10,mp:24, sk:{name:"ポイズンブレス",icon:"☠️",type:"magicAll",power:1.6,flat:7,mp:18,desc:"猛毒の 全体ブレス"}},
+        {id:"u_titan",name:"タイタン",t:"rock",c:"#8a8f99",img:"character_monster_golem_gray",hp:124,atk:22,def:13,mp:12, sk:{name:"メテオインパクト",icon:"🪨",type:"phys",power:3.0,mp:18,desc:"隕石の 一撃"}},
+        {id:"u_pumpkinlord",name:"パンプキンロード",t:"ghost",c:"#e08a30",img:"character_monster_jackolantern_orange",hp:84,atk:18,def:8,mp:26, sk:{name:"ソウルバーン",icon:"🎃",type:"magic",power:2.4,flat:10,mp:16,desc:"魂を 焼く炎"}},
+        {id:"u_kraken",name:"クラーケン",t:"blob",c:"#4f8fb0",img:"character_monster_ika_green",hp:106,atk:18,def:10,mp:24, sk:{name:"メイルシュトローム",icon:"🐙",type:"magicAll",power:1.8,flat:8,mp:20,desc:"大渦の 全体攻撃"}},
+        {id:"u_frankenex",name:"フランケンEX",t:"skull",c:"#7aa060",img:"character_monster_frankenstein_01_green",hp:110,atk:20,def:11,mp:18, sk:{name:"サンダーボルト",icon:"⚡",type:"magic",power:2.6,flat:11,mp:18,desc:"高圧の 雷撃"}},
+        {id:"u_salamander",name:"サラマンダー",t:"dragon",c:"#ff7a3a",img:"character_monster_hi_red",hp:98,atk:20,def:9,mp:24, sk:{name:"ヴォルケイノ",icon:"🌋",type:"magicAll",power:1.9,flat:8,mp:22,desc:"噴火の 全体炎"}},
+        {id:"u_valkyrie",name:"ヴァルキリー",t:"lich",c:"#cfe0ff",img:"character_monster_frankenstein_02_blue",hp:94,atk:17,def:10,mp:28, sk:{name:"ブレスソング",icon:"🎶",type:"healAll",healRatio:0.85,mp:20,desc:"戦乙女の 癒し歌"}},
+        {id:"u_dagon",name:"ダゴン",t:"dragon",c:"#6a6ad0",img:"character_monster_dragon_01_purple",hp:102,atk:19,def:10,mp:24, sk:{name:"クラッシュタイド",icon:"🌊",type:"magic",power:2.5,flat:10,mp:18,desc:"津波の 一撃"}},
+      ];
+      U.forEach((u,i)=>{ const skid="uq_"+i; SKILLS[skid]=Object.assign({unique:true},u.sk);
+        SPECIES[u.id]={ name:u.name, face:"⭐", baseHp:u.hp, baseAtk:u.atk, baseDef:u.def, baseMp:u.mp, growth:{hp:11,atk:5,def:4,mp:5}, skills:[skid], look:{t:u.t,c:u.c}, baseSpdV:13, uniqueSkill:skid, src:"gacha", unique:true };
+        SKINS[u.id]="img/"+u.img+".png"; if(typeof GACHA_MON!=="undefined")GACHA_MON.push(u.id);
+      });
+    })();
     const SLOT_LABEL = { weapon:"ぶき", armor:"よろい", acc:"アクセ" };
     const SLOT_ICON = { weapon:"⚔️", armor:"🛡️", acc:"💍" };
     const SELL_VALUE = { common:15, rare:60, epic:180 }; // ゴールド
     function sellValue(it){ return SELL_VALUE[it.tier]||10; }
-    const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=60, PULL10_COST=540, FUSE_MIN_LV=10;
+    const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=30, PULL10_COST=270, FUSE_MIN_LV=10;
     function effLabel(e){ return ({crit:"ときどき会心(2倍)",guard:"被ダメ20%減",drain:"与ダメの30%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回",dodge:"22%で 攻撃を かわす",manaflow:"毎ターン MP+5",berserk:"ピンチほど 攻撃UP(最大+60%)"})[e]||""; }
     function tierClass(t){ return t==="epic"?"epic":(t==="rare"?"rare":""); }
 
@@ -679,6 +708,21 @@
     function baseSpd(s){ if(SPECIES[s]&&SPECIES[s].baseSpdV!=null)return SPECIES[s].baseSpdV; return SPD_BASE[s]!=null?SPD_BASE[s]:9; }
     function calcStats(s,lv){ const sp=SPECIES[s], n=lv-1; return { maxHp:sp.baseHp+sp.growth.hp*n, atk:sp.baseAtk+sp.growth.atk*n, def:sp.baseDef+sp.growth.def*n, maxMp:sp.baseMp+sp.growth.mp*n, spd:baseSpd(s)+Math.floor(n*0.5) }; }
     function expToNext(lv){ return Math.round(3*lv*lv + 12*lv + 8); }
+    /* ===== 呪文の段階習得（傾向あり・上位ほど強い呪文・低位は強呪文を覚えない） ===== */
+    function monTier(sid){ const sp=SPECIES[sid]; if(!sp)return 1; if(sp.unique||sp.top)return 5; if(sp.rank)return sp.rank; if(sp.synth)return 4; const s=(sp.baseHp||30)+(sp.baseAtk||8)*3+(sp.baseMp||10); return s<78?1:s<108?2:3; }
+    const FAM_TEND={sl:"heal",be:"attack",dr:"attack",un:"attack",go:"support",bi:"attack",de:"attack",sp:"attack",pl:"heal",ey:"attack",aq:"heal",in:"support"};
+    function tendFor(sid){ const sp=SPECIES[sid]; if(!sp)return "attack"; if(sp.fam&&FAM_TEND[sp.fam])return FAM_TEND[sp.fam]; const sk=sp.skills||[]; if(sk.some(s=>["heal","behoimi","behomara","behoma"].includes(s)))return "heal"; if(sk.some(s=>["kabuff","sap","bikiruto","sleep","poison"].includes(s)))return "support"; return "attack"; }
+    function learnsetFor(sid){ const sp=SPECIES[sid]; if(!sp)return []; const tier=monTier(sid), tend=tendFor(sid), out=[];
+      const ATK={1:["mera","hyado"],2:["bigMera","begirama","bagi"],3:["merazoma","hyadain"],4:["io","gigaslash"],5:["gigaslash","io"]};
+      const HEAL={1:["heal"],2:["behoimi"],3:["behomara"],4:["behoma"],5:["behoma"]};
+      const SUP={1:["kabuff"],2:["sap"],3:["bikiruto"],4:["sleep"],5:["zao"]};
+      const pool=tend==="heal"?HEAL:(tend==="support"?SUP:ATK);
+      const lvls=[8,16,26,36,46];
+      for(let k=1;k<=5;k++){ if(k>tier)break; const arr=pool[k]||pool[5]; const id=arr[(sid.length+k)%arr.length]; if(SKILLS[id])out.push({lv:lvls[k-1],skill:id}); }
+      if(tend!=="attack"){ const a=ATK[Math.min(tier,3)]; const id=a[sid.length%a.length]; if(SKILLS[id])out.push({lv:18,skill:id}); } // 「それだけではない」攻撃も1つ
+      if(sp.uniqueSkill)out.push({lv:1,skill:sp.uniqueSkill});
+      return out; }
+    function learnNewSkills(m){ const ls=learnsetFor(m.speciesId); const got=[]; ls.forEach(e=>{ if(m.level>=e.lv && !m.skills.includes(e.skill) && m.skills.length<6){ m.skills.push(e.skill); got.push(SKILLS[e.skill]?SKILLS[e.skill].name:e.skill); } }); return got; }
     function findItem(uid){ return uid?save.inventory.find(i=>i.uid===uid):null; }
     function equipBonus(m){ const b={atk:0,def:0,hp:0,spd:0,effects:[]}; ["weapon","armor","acc"].forEach(s=>{const it=findItem(m.equip[s]); if(it){b.atk+=it.atk||0;b.def+=it.def||0;b.hp+=it.hp||0;b.spd+=it.spd||0; if(it.effect)b.effects.push(it.effect);}}); return b; }
     function totalStats(m){ const base=calcStats(m.speciesId,m.level), eb=equipBonus(m), p=m.plus||{atk:0,def:0,hp:0,mp:0}, ap=avatarPas(); return { atk:Math.round((base.atk+eb.atk+p.atk)*(1+(ap.atk||0))), def:Math.round((base.def+eb.def+p.def)*(1+(ap.def||0))), maxHp:base.maxHp+eb.hp+p.hp, maxMp:base.maxMp+p.mp, spd:Math.round((base.spd+eb.spd)*(1+(ap.spd||0))), effects:eb.effects }; }
@@ -688,7 +732,7 @@
     /* セーブ（M6/M7互換） */
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
-    function newMember(s,lv){ lv=lv||1; return { uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; }
+    function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
     function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
     function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
@@ -1538,9 +1582,9 @@
       const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0)));
       let gemGain = Math.random()<0.12 ? (1+Math.floor(Math.random()*2)) : 0; // ジェムは たまに少し
       const ups=[];
-      run.allies.forEach(al=>{ const m=findMember(al.uid); if(!m)return; const before=m.level; m.exp+=exp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}`); refreshAlly(al,m);} });
+      run.allies.forEach(al=>{ const m=findMember(al.uid); if(!m)return; const before=m.level; m.exp+=exp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ const got=learnNewSkills(m); ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}`+(got.length?` ＜${got.join("・")}を おぼえた！＞`:"")); refreshAlly(al,m);} });
       const activeUids=new Set(run.allies.map(a=>a.uid)); const benchExp=Math.floor(exp*0.3);
-      if(benchExp>0) save.box.forEach(m=>{ if(activeUids.has(m.uid))return; const before=m.level; m.exp+=benchExp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before)ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}(控)`); });
+      if(benchExp>0) save.box.forEach(m=>{ if(activeUids.has(m.uid))return; const before=m.level; m.exp+=benchExp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ learnNewSkills(m); ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}(控)`);} });
       drops.forEach(d=>save.inventory.push(d)); save.gold=(save.gold||0)+gold; save.gems=(save.gems||0)+gemGain; handleRecruits(recruits); if(!boss) addHunt(run.floor, run.enemies.length); persist();
       let msg=`てきを たおした！ けいけんち+${exp} ／ 💰+${gold}G${gemGain?` ／ 💎+${gemGain}`:""}`;
       if(drops.length)msg+=`<br>📦 ${drops.map(d=>d.icon+d.name).join("、")}`;
