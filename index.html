@@ -56,7 +56,7 @@
     .reset-btn { display:block; margin:18px auto 0; background:none; border:1px solid var(--line); color:#9a90ad; border-radius:8px; padding:6px 14px; font-size:0.78rem; font-family:inherit; cursor:pointer; }
     .floor-tag { text-align:center; font-size:1.05rem; color:var(--gold); margin:4px 0 6px; letter-spacing:0.12em; } .floor-tag .boss { color:#ff8a8a; }
     /* 敵リスト */
-    #enemy-list { display:flex; flex-direction:row; justify-content:center; align-items:flex-end; gap:12px; flex-wrap:wrap; min-height:150px; margin:10px 0; }
+    #enemy-list { display:flex; flex-direction:row; justify-content:center; align-items:flex-end; gap:14px; flex-wrap:wrap; min-height:42vh; margin:8px 0; border-radius:14px; padding:12px 10px 8px; box-shadow:inset 0 0 24px rgba(0,0,0,0.35); border:1px solid var(--line); overflow:hidden; }
     .ecard { position:relative; overflow:hidden; border-radius:12px; padding:2px; }
     .ecard.dead { opacity:0.45; } .ecard.shake { animation:shake 0.3s; }
     .ecard.selectable { outline:2px dashed var(--gold); outline-offset:2px; }
@@ -137,12 +137,12 @@
     #world-hint{ display:none !important; }
     #world-toast{ position:absolute; top:8px; left:50%; transform:translateX(-50%); background:#1a1426e8; border:1px solid var(--gold); color:var(--ink); font-size:0.78rem; padding:6px 12px; border-radius:10px; white-space:nowrap; z-index:5; box-shadow:0 2px 10px #0008; }
     #world-head .fname{ color:var(--gold); letter-spacing:0.06em; }
-    #screen-world{ touch-action:none; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:space-between; min-height:100dvh; padding-bottom:8px; }
-    #world-stage{ position:relative; width:min(98vw, 74vh); margin:0 auto; touch-action:none; }
+    #screen-world{ touch-action:none; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:space-between; height:100dvh; max-width:100%; padding:6px 0 10px; }
+    #world-stage{ position:relative; width:min(94vw, 60vh); margin:0 auto; touch-action:none; flex:0 0 auto; }
     #world-canvas{ width:100%; height:auto; image-rendering:pixelated; border:1px solid var(--line); border-radius:10px; background:#0c1018; display:block; touch-action:none; pointer-events:none; }
     .round-btn{ position:absolute; top:8px; right:8px; width:42px; height:42px; border-radius:50%; background:#2f2742dd; color:var(--gold); border:1px solid var(--gold); font-size:1.4rem; line-height:1; cursor:pointer; }
     /* 操作パッドは マップの外（下）に配置 */
-    #world-controls{ display:flex; align-items:center; justify-content:space-between; max-width:352px; margin:10px auto 0; padding:0 8px; min-height:104px; }
+    #world-controls{ display:flex; align-items:center; justify-content:space-between; width:100%; max-width:460px; margin:6px auto 0; padding:0 26px; min-height:108px; flex:0 0 auto; }
     #world-action{ font-family:inherit; font-weight:bold; color:#1a1426; background:linear-gradient(#f4dd95,var(--gold)); border:none; border-radius:10px; padding:12px 18px; box-shadow:0 3px 0 #a8842f; cursor:pointer; }
     #stick{ position:relative; width:104px; height:104px; border-radius:50%; background:#ffffff14; border:2px solid #ffffff2a; touch-action:none; }
     #stick-knob{ position:absolute; left:50%; top:50%; width:34px; height:34px; border-radius:50%; background:var(--gold); opacity:0.9; pointer-events:none; transform:translate(-50%,-50%); }
@@ -1012,12 +1012,30 @@
           {n:"ナビ",t:"こいつが 最後の敵……！ きみと 魔物たちの 絆、見せてやろう！"} ],
     };
     function floorStory(f){ return STORY_FLOOR[f] || [ {n:"ナビ",t:`第${f}層 ${floorInfo(f).town}に たどりついた。ここまで よく来たね。`}, {n:"ナビ",t:"まだ 上は ある。いこう。"} ]; }
-    /* ===== クエスト：各層の“試練”を こなすと 層ボスに 挑める ===== */
-    function questsForFloor(f){ const huntN=3+Math.floor(f/3); const q=[{type:"hunt",n:huntN}]; if(f>=3)q.push({type:"collect",n:1+(f%2)}); return q; }
+    /* ===== クエスト：各層の物語仕立ての“試練”を こなすと 層ボスに 挑める ===== */
+    function questsForFloor(f){ const huntN=3+Math.floor(f/3); const q=[{type:"hunt",n:huntN}]; if(f>=2)q.push({type:"collect",n:1+(f%2)}); return q; }
+    // 層ごとの物語（依頼人・固有名・理由）。未定義の層は genLore で 雰囲気のある内容を自動生成
+    const QUEST_LORE={
+      1:{hunt:"スライム",coll:"テイマー証",brief:[{n:"ナビ",t:"まずは テイマーギルドの 登録試験！ この層の 魔物を たおして 実力を 見せよう。"},{n:"ナビ",t:"きみは 剣を 持てない。でも 契約した 魔物が いれば 戦える。証の かけらも 拾ってきてね。"}],done:[{n:"ナビ",t:"合格だ！ これで きみは 正式な【調教師】。塔への 扉が ひらいたよ。"}]},
+      2:{hunt:"水妖",coll:"水の結晶",brief:[{n:"村長",t:"水郷の 井戸に 水妖が わいて、街の 水が 濁って しもうた…。"},{n:"村長",t:"水妖を 払い、清らかな『水の結晶』を 集めて 井戸を 浄化して くれぬか。頼む。"}],done:[{n:"村長",t:"おお、水が 澄んだ！ 恩に着る。奥の 主も、きみたちなら…。"}]},
+      3:{hunt:"火竜の眷属",coll:"火竜の鱗",brief:[{n:"???",t:"よお。あんたも 上を めざす テイマーか。"},{n:"カイ",t:"おれは カイ。この層の 火竜の眷属を 狩って『火竜の鱗』を 集めると 道が ひらく。先に 行かせて もらうぜ。"}],done:[{n:"カイ",t:"…ちっ、もう 終わらせたのか。少しは やるじゃねえか。"}]},
+      4:{hunt:"さらいの魔物",coll:"手がかりの布",brief:[{n:"母親",t:"娘の ミラが 魔物に さらわれて…！ お願い、助けて！"},{n:"母親",t:"魔物を 倒して、ミラの『手がかりの布』を 見つけて ください…！"}],done:[{n:"ミラ",t:"…たすけて くれて ありがとう。あなたの 魔物さん、つよいね。"}]},
+      5:{hunt:"空賊",coll:"風の翼片",brief:[{n:"風守り",t:"蒼天の 街を 空賊が 襲っておる。風の塔の 主と 通じておるらしい。"},{n:"風守り",t:"空賊を 蹴散らし、『風の翼片』を 取り戻して くれ。塔の 封が ゆるむはずだ。"}],done:[{n:"風守り",t:"見事。風が きみに 味方しておる。塔の 主の もとへ ゆけ。"}]},
+      8:{hunt:"坑道の亡霊",coll:"輝く鉱石",brief:[{n:"鉱夫の長",t:"坑道で 落盤が 続く。奥から 亡霊の うめきが 聞こえるんだ…。"},{n:"鉱夫の長",t:"亡霊を 鎮め、『輝く鉱石』を 持ち帰って くれ。配合の 触媒にも なるぞ。"}],done:[{n:"鉱夫の長",t:"助かった！ この鉱石、きみに 譲る。強い 仲間を 生み出しな。"}]},
+      10:{hunt:"塔の守番",coll:"封印の鍵片",brief:[{n:"カイ",t:"…まだ 生きてたか。ここからは 一人じゃ きつい。"},{n:"カイ",t:"塔の守番を 削って『封印の鍵片』を 集めろ。今回は 貸しだ。共闘と いこうぜ。"}],done:[{n:"カイ",t:"やるな。…礼は 言わねえ。先で また 会おう。"}]},
+      15:{hunt:"しんがりの影",coll:"古き誓約",brief:[{n:"塔の声",t:"よくぞ 折り返しまで。だが ここは“しんがり層”。半端者は 通さぬ。"},{n:"塔の声",t:"影を 討ち、『古き誓約』を 示せ。資格 ある者にのみ 道は 続く。"}],done:[{n:"塔の声",t:"…認めよう。汝の 絆、本物だ。"}]},
+      20:{hunt:"黄金の番人",coll:"財宝の鍵",brief:[{n:"カイ",t:"よお。正直 おどろいた。お前、本当に ここまで 来たんだな。"},{n:"カイ",t:"黄金の番人を 倒して『財宝の鍵』を 集めろ。この先は 二人で 突破だ。…一時 休戦な。"}],done:[{n:"カイ",t:"…お前と なら 頂上まで 行ける 気がする。いくぞ。"}]},
+      25:{hunt:"天望の使徒",coll:"星の欠片",brief:[{n:"ナビ",t:"第25層《天望の街》。雲を 見おろす 高さ…。残りは わずかだね。"},{n:"ナビ",t:"使徒を 越えて『星の欠片』を 集めよう。みんなの 想いを のせて。"}],done:[{n:"ナビ",t:"星が 道を 照らしてる。さあ、最上層は すぐそこ。"}]},
+      29:{hunt:"終局の番兵",coll:"終局の証",brief:[{n:"カイ",t:"次が 最上層だ。管理者が 待ってる。"},{n:"カイ",t:"番兵を 倒して『終局の証』を 集めろ。お前と お前の 魔物、信じてるぜ。"}],done:[{n:"カイ",t:"…準備は できたな。扉の 先で 決着だ。"}]},
+      30:{hunt:"管理者の影",coll:"頂きの鍵",brief:[{n:"管理者",t:"よくぞ のぼってきた、調教師よ。だが この塔は たやすく 還さぬ。"},{n:"管理者",t:"わが 影を 退け、『頂きの鍵』を 得てみせよ。できるならば、な。"}],done:[{n:"ナビ",t:"扉が ひらく…！ いよいよ 管理者 本体だ。きみと 魔物たちの 絆、見せてやろう！"}]},
+    };
+    function genLore(f){ const town=floorInfo(f).town; const foes=["凶暴な魔物","さまよう亡霊","群れる魔獣","狂乱の幻獣"]; const items=["失われた遺物","封印の鍵片","古びた護符","聖なる結晶"]; const giver=["街の衛兵","老いた賢者","旅の商人","祠の巫女"]; const i=f%foes.length,j=(f+1)%items.length,g=(f+2)%giver.length; return { hunt:foes[i], coll:items[j], brief:[ {n:giver[g],t:`${town}にも 塔の 異変が…。${foes[i]}が 増え、人々は おびえている。`}, {n:giver[g],t:`どうか ${foes[i]}を しずめ、『${items[j]}』を 集めて ほしい。それが 上へ 進む 鍵に なる。`} ], done:[ {n:giver[g],t:`見事…！『${items[j]}』の 力で ボスへの 道が ひらいた。武運を。`} ] }; }
+    function loreFor(f){ return QUEST_LORE[f]||genLore(f); }
     function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0}; return save.quest[f]; }
     function questDone(f){ const p=questProg(f); return questsForFloor(f).every(q=> q.type==="hunt"?p.h>=q.n:p.c>=q.n); }
-    function questText(f){ const p=questProg(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️魔物 ${Math.min(p.h,q.n)}/${q.n}`:`📦宝箱 ${Math.min(p.c,q.n)}/${q.n}`).join("　"); }
-    function questBrief(f){ const qs=questsForFloor(f); const lines=qs.map(q=> q.type==="hunt"?`・この層の 魔物を ${q.n}体 たおす`:`・ダンジョンの 宝箱を ${q.n}個 あつめる`).join("\n"); return [ {n:"ナビ",t:"層ボスへの 扉は 固く 閉ざされてる…。この層の “試練” を こなせば ひらくよ。"}, {n:"ナビ",t:"【この層の クエスト】\n"+lines}, {n:"ナビ",t:"フィールド／ダンジョンで こなしてね。達成すると ダンジョン奥の ボスに 挑めるよ！"} ]; }
+    function questText(f){ const p=questProg(f),L=loreFor(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️${L.hunt} ${Math.min(p.h,q.n)}/${q.n}`:`📦${L.coll} ${Math.min(p.c,q.n)}/${q.n}`).join("　"); }
+    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f); const obj=qs.map(q=> q.type==="hunt"?`・${L.hunt}を ${q.n}体 たおす`:`・『${L.coll}』を ${q.n}個 あつめる（宝箱/フィールド）`).join("\n"); return L.brief.concat([ {n:"ナビ",t:"【クエスト】\n"+obj}, {n:"ナビ",t:"達成すると ダンジョン奥の 層ボスへの 扉が ひらくよ！"} ]); }
+    function questDoneStory(f){ return (loreFor(f).done||[{n:"ナビ",t:"試練 達成！ 層ボスに 挑めるよ。"}]); }
     function afterQuest(f,wasDone){ if(!wasDone && questDone(f)){ showToast("✨ クエスト達成！ 層ボスに 挑める！"); SFX.fanfare&&SFX.fanfare(); } else { showToast("クエスト  "+questText(f)); } }
     function addHunt(f,n){ if(questDone(f))return; const was=questDone(f); questProg(f).h+=(n||1); persist(); afterQuest(f,was); }
     function addCollect(f){ const was=questDone(f); questProg(f).c+=1; persist(); afterQuest(f,was); }
@@ -1136,7 +1154,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ if(!questDone(world.floor)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ この層の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこりクエスト】\n"+questText(world.floor)} ]); return; } if(confirm(`${floorInfo(world.floor).name} の 層ボスに いどみますか？`)) startEncounter(true); }
+      else if(c==="B"){ const f=world.floor; if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ この層の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこりクエスト】\n"+questText(f)} ]); return; } const go=()=>{ if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }; const p=questProg(f); if(!p.toldDone){ p.toldDone=true; persist(); runDialogue(questDoneStory(f), go); } else go(); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
@@ -1148,7 +1166,8 @@
       const town=world.area!=="dungeon"; // 街・フィールドは草地ベース、ダンジョンは暗い床
       wctx.fillStyle=town?"#3a7a3a":"#15121f"; wctx.fillRect(0,0,cw,ch);
       const x0=Math.floor(camx/TS), y0=Math.floor(camy/TS);
-      for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town,tx,ty); } }
+      for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town,tx,ty,false); } }
+      for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; if(!TILE_IMG[c])continue; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town,tx,ty,true); } }
       // プレイヤー
       const psx=world.px-camx, psy=world.py-camy;
       const av=AVATARS[save.avatar]||AVATARS.hero;
@@ -1161,20 +1180,24 @@
       }
     }
     function floorTheme(f){
-      if(f<=4)  return {g:"#5aa84e",g2:"#66b659",w:"#2f6fbe",s:"#e6d6a6",d:"#2b2440",d2:"#322b48"};
-      if(f<=8)  return {g:"#6f8a52",g2:"#7d9a5e",w:"#3f7d96",s:"#c9bd8e",d:"#2e2630",d2:"#3a3040"}; // 鉱山
-      if(f<=12) return {g:"#b58a4a",g2:"#c89a55",w:"#3aa0b0",s:"#e6cf8e",d:"#37231e",d2:"#48312a"}; // 灼熱
-      if(f<=16) return {g:"#cfe0e8",g2:"#e6f0f6",w:"#7fb6db",s:"#dfe6ea",d:"#28303a",d2:"#33404e"}; // 雪原
-      if(f<=20) return {g:"#a89a4a",g2:"#c4b45a",w:"#4a90b0",s:"#e8d77a",d:"#332a18",d2:"#44381f"}; // 黄金
-      if(f<=24) return {g:"#5fb094",g2:"#7fd0ad",w:"#4fb0d0",s:"#cfe8dd",d:"#243038",d2:"#2f4049"}; // 蒼天
-      return            {g:"#6a4a6a",g2:"#7a5a7a",w:"#5a3a6a",s:"#8a6a7a",d:"#241826",d2:"#322236"}; // 魔界/終局
+      if(f<=4)  return {g:"#5aa84e",g2:"#66b659",w:"#2f6fbe",s:"#e6d6a6",d:"#2b2440",d2:"#322b48",sky:"#8fc8ff"};
+      if(f<=8)  return {g:"#6f8a52",g2:"#7d9a5e",w:"#3f7d96",s:"#c9bd8e",d:"#2e2630",d2:"#3a3040",sky:"#aeb6c0"}; // 鉱山
+      if(f<=12) return {g:"#b58a4a",g2:"#c89a55",w:"#3aa0b0",s:"#e6cf8e",d:"#37231e",d2:"#48312a",sky:"#ffb070"}; // 灼熱
+      if(f<=16) return {g:"#cfe0e8",g2:"#e6f0f6",w:"#7fb6db",s:"#dfe6ea",d:"#28303a",d2:"#33404e",sky:"#d8ecff"}; // 雪原
+      if(f<=20) return {g:"#a89a4a",g2:"#c4b45a",w:"#4a90b0",s:"#e8d77a",d:"#332a18",d2:"#44381f",sky:"#ffe6a0"}; // 黄金
+      if(f<=24) return {g:"#5fb094",g2:"#7fd0ad",w:"#4fb0d0",s:"#cfe8dd",d:"#243038",d2:"#2f4049",sky:"#bfeaff"}; // 蒼天
+      return            {g:"#6a4a6a",g2:"#7a5a7a",w:"#5a3a6a",s:"#8a6a7a",d:"#241826",d2:"#322236",sky:"#3a2a4a"}; // 魔界/終局
     }
-    function drawTile(c,sx,sy,town,tx,ty){
+    function battleSceneBg(f){ const t=floorTheme(f); return `linear-gradient(180deg, ${t.sky} 0%, ${t.sky} 48%, ${t.g} 48%, ${t.g2} 100%)`; }
+    function drawTile(c,sx,sy,town,tx,ty,overlay){
       const h=(((tx||0)*73856093)^((ty||0)*19349663))>>>0; const rb=(n)=>((h>>(n*4))&15); const th=floorTheme(world.floor);
+      if(overlay){ // 2パス目：建物/オブジェクト画像を“後描き”（隣タイルで欠けないように）
+        const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c); let dw=big?TS*2.0:TS; let dh=dw*ih/iw; const maxh=big?TS*2.8:TS*1.8; if(dh>maxh){ dh=maxh; dw=dh*iw/ih; } wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); }
+        return; }
       // 地面ベース（草/床）を全タイルの下地に（層テーマ色）
       if(town){ wctx.fillStyle=th.g; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.g2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); }
       else { wctx.fillStyle=th.d; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.d2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); }
-      const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c); let dw=big?TS*1.9:TS; let dh=dw*ih/iw; const maxh=big?TS*2.7:TS*1.8; if(dh>maxh)dh=maxh; wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); return; }
+      if(getImg(TILE_IMG[c])){ return; } // 画像タイルは地面だけ描いて、本体は2パス目に回す
       const cxv=sx+TS/2;
       const blob=(x,y,r,col)=>{ wctx.fillStyle=col; wctx.beginPath(); wctx.arc(x,y,r,0,7); wctx.fill(); };
       const house=(wall,roof,label)=>{ wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.fillRect(sx+5,sy+TS-6,TS-10,5); wctx.fillStyle=wall; wctx.fillRect(sx+5,sy+13,TS-10,TS-15); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(sx+TS-1,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="rgba(255,255,255,0.18)"; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(cxv,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(cxv-3,sy+19,6,9); wctx.fillStyle="#bfe0ff"; wctx.fillRect(sx+7,sy+16,4,4); wctx.fillRect(sx+TS-11,sy+16,4,4); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-1); };
@@ -1260,6 +1283,7 @@
 
     function renderBattle(){ const boss=run.context==="boss";
       setTint(boss?TINT_BOSS:floorInfo(run.floor).tint);
+      el.enemyList.style.background=battleSceneBg(run.floor);
       el.floorTag.innerHTML=boss?`${floorInfo(run.floor).name} <span class="boss">― 層ボス ―</span>`:`${floorInfo(run.floor).name}`;
       // 敵（モンスターの姿のみ。HP/レベルは非表示）
       el.enemyList.innerHTML="";
