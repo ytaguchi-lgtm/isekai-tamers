@@ -188,9 +188,9 @@
     <button class="reset-btn" id="reset">さいしょから やりなおす</button>
   </div>
 
-  <!-- そだてる -->
+  <!-- 装備変更 -->
   <div id="screen-equip" class="screen hidden">
-    <div class="sub" id="equip-head">そだてる</div>
+    <div class="sub" id="equip-head">装備変更</div>
     <div class="skill-line" id="equip-skills" style="text-align:center;margin:0 0 8px;"></div>
     <div id="equip-slots"></div>
     <div class="inv-title">もちもの（タップで そうび／スキルの書は おぼえる）</div>
@@ -281,7 +281,7 @@
       <div class="menu-title">メニュー</div>
       <div class="menu-tabs">
         <button class="mtab" data-mt="party">へんせい</button>
-        <button class="mtab" data-mt="train">そだてる</button>
+        <button class="mtab" data-mt="train">装備変更</button>
         <button class="mtab" data-mt="item">どうぐ</button>
         <button class="mtab" data-mt="zukan">ずかん</button>
         <button class="mtab" data-mt="sys">システム</button>
@@ -544,7 +544,7 @@
       a18:{name:"こがねの占師",  img:"img/avatar_18.png", c:"#e0c050", pas:{gold:0.15}},
       a19:{name:"あおの魔女",    img:"img/avatar_19.png", c:"#7090d0", pas:{spd:0.05,atk:0.05}},
     };
-    function avatarPas(){ const a=AVATARS[save.avatar]||AVATARS.hero; return a.pas||{}; }
+    function avatarPas(){ return {}; } // 冒険者(人間)は戦闘に関与せず、能力(スキル/パッシブ)は持たない＝見た目のみ
 
     /* 装備＆スキルブック */
     const ITEMS = {
@@ -734,12 +734,12 @@
           <div class="stats">攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}${t.effects.length?` ／ ${t.effects.map(effLabel).join("・")}`:""}</div>
           ${ps?`<div class="plus-line">⭐ 配合ボーナス ${ps}</div>`:""}
           <div class="skill-line">✨ ${skillSummary(m)}</div><div class="equip-line">🎒 ${equipSummary(m)}</div></div>
-          <div class="card-btns"><button class="small-btn ${inP?"ghost":""}" data-toggle="${m.uid}">${inP?"控えに":"出撃"}</button><button class="small-btn ghost" data-equip="${m.uid}">そだてる</button></div></div>`;
+          <div class="card-btns"><button class="small-btn ${inP?"ghost":""}" data-toggle="${m.uid}">${inP?"控えに":"出撃"}</button><button class="small-btn ghost" data-equip="${m.uid}">装備変更</button></div></div>`;
         partyList.appendChild(c); });
     }
     function togglePartyMember(uid){ const i=save.partyUids.indexOf(uid); if(i>=0)save.partyUids.splice(i,1); else { if(save.partyUids.length>=MAX_PARTY){alert("出撃は "+MAX_PARTY+"体までです");return;} save.partyUids.push(uid); } persist(); }
 
-    /* そだてる */
+    /* 装備変更 */
     let equipUid=null, equipFilter="weapon"; function curEquipMember(){ return findMember(equipUid); }
     function renderEquip(){ const m=curEquipMember(); if(!m){showWorld();return;} const s=SPECIES[m.speciesId],t=totalStats(m);
       document.getElementById("equip-head").innerHTML=`${faceHTML(m.speciesId)} ${s.name}（Lv ${m.level}）　攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}　<span style="color:#f0d060">💰${save.gold||0}</span>`;
@@ -876,12 +876,12 @@
         body.innerHTML=`<div class="sub">手持ち：${save.box.length}体（出撃の入れ替えは <b>配合所</b> で）</div>`;
         const sorted=save.box.slice().sort((a,b)=>(save.partyUids.includes(b.uid)?1:0)-(save.partyUids.includes(a.uid)?1:0));
         sorted.forEach(m=>{ const t=totalStats(m),s=SPECIES[m.speciesId],inP=save.partyUids.includes(m.uid); const c=document.createElement("div"); c.className="monster"+(inP?" party-on":"");
-          c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="stats">攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}</div></div><button class="small-btn ghost" data-equip="${m.uid}">そだてる</button></div>`;
+          c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="stats">攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}</div></div><button class="small-btn ghost" data-equip="${m.uid}">装備変更</button></div>`;
           body.appendChild(c); });
       } else if(menuTab==="train"){
-        body.innerHTML=`<div class="sub">そだてる モンスターを えらぶ</div>`;
+        body.innerHTML=`<div class="sub">装備変更 モンスターを えらぶ</div>`;
         save.box.forEach(m=>{ const s=SPECIES[m.speciesId]; const c=document.createElement("div"); c.className="monster";
-          c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="skill-line">${skillSummary(m)}</div><div class="equip-line">${equipSummary(m)}</div></div><button class="small-btn ghost" data-equip="${m.uid}">そだてる</button></div>`;
+          c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span></div><div class="skill-line">${skillSummary(m)}</div><div class="equip-line">${equipSummary(m)}</div></div><button class="small-btn ghost" data-equip="${m.uid}">装備変更</button></div>`;
           body.appendChild(c); });
       } else if(menuTab==="zukan"){
         const ids=Object.keys(SPECIES); const seenN=ids.filter(id=>save.seen&&save.seen[id]).length;
@@ -898,7 +898,7 @@
         keys.forEach(k=>{ const it=CONSUM[k]; const c=document.createElement("div"); c.className="inv-item"; c.innerHTML=`<div class="iname">${it.name} <span class="mp">×${cs[k]}</span><div class="sub" style="text-align:left;margin:2px 0 0;">${it.desc}</div></div>`; body.appendChild(c); });
       } else {
         let av=`<div class="sub" style="margin-top:8px;">アバター（みためを えらぶ）</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">`;
-        (save.avatars||["hero"]).forEach(k=>{ const a=AVATARS[k]; if(!a)return; const ps=a.pas?Object.entries(a.pas).map(([x,v])=>({exp:"経験",gold:"金",atk:"攻",def:"守",spd:"速",heal:"回"}[x]+"+"+Math.round(v*100)+"%")).join(" "):""; av+=`<button class="small-btn ${save.avatar===k?"":"ghost"}" data-avatar="${k}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;"><img src="${a.img}" style="width:38px;height:38px;object-fit:contain;image-rendering:pixelated;"><span style="font-size:0.66rem;">${a.name}${save.avatar===k?"◀":""}</span><span style="font-size:0.56rem;color:#9fe0b0;">${ps}</span></button>`; });
+        (save.avatars||["hero"]).forEach(k=>{ const a=AVATARS[k]; if(!a)return; av+=`<button class="small-btn ${save.avatar===k?"":"ghost"}" data-avatar="${k}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;"><img src="${a.img}" style="width:38px;height:38px;object-fit:contain;image-rendering:pixelated;"><span style="font-size:0.66rem;">${a.name}${save.avatar===k?"◀":""}</span></button>`; });
         av+=`</div>`;
         const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1);
         const fl=`<div class="sub" style="margin-top:8px;">層を移動（到達済みのみ）</div><div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-floor="down">◀ 下の層</button><span style="min-width:120px;text-align:center">${floorInfo(save.floor||1).name}</span><button class="small-btn ghost" data-floor="up">上の層 ▶</button></div><div class="sub" style="margin-top:2px;">（最上 ${maxF}層まで）</div>`;
@@ -959,7 +959,7 @@
     function enemyLevelFor(f){ return Math.max(1, Math.round(f*2.4)); } // 30層で約Lv72。配合を重ねて到達する想定
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
     const TS=32, VIEW=11; // タイル32px、表示11x11
-    const SOLID_TOWN=new Set(["t","o","w","#","h"]);
+    const SOLID_TOWN=new Set(["t","o","w","#","h","I","S","F","G","N","V"]); // 木/噴水/水/壁/家/施設/人に突き当たる
     const SOLID_FIELD=new Set(["w","t"]);
     const SOLID_DUN=new Set(["#","r"]);
     function solidSet(){ return world.area==="town"?SOLID_TOWN:(world.area==="field"?SOLID_FIELD:SOLID_DUN); }
@@ -1019,7 +1019,7 @@
     function npcGuideStory(){ return [ {n:"あんないの人",t:"武器屋では ゴールドで そうび、ガチャ堂では ジェムで 限定品が 手に入るよ。"}, {n:"あんないの人",t:"配合は Lv10をこえた 魔物どうしで できる。強い血を つないでいこう。"}, {n:"あんないの人",t:"宿屋に 入れば HPもMPも 全回復だ。むりせず もどっておいで。"} ]; }
     function npcVillagerStory(f){ return [ {n:"村人",t:"塔の魔物は 倒しても 倒しても わいてくる…。むりは しなさんな。"}, {n:"村人",t:`${floorInfo(f).town}は いいところだろう。……早く 外の世界に 帰りたいがな。`} ]; }
     function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor)); }
-    let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null;
+    let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null, actionTargetC=null;
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
     // ===== 街：施設＋石畳の十字路＋家＋木＋下の門→フィールド =====
@@ -1050,15 +1050,21 @@
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function buildDungeon(floor){
-      const W=22,H=16; const g=[]; for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++)row.push("#"); g.push(row); }
-      const room=(x0,y0,w,h)=>{ for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
-      const hcorr=(a,b,y)=>{ for(let x=Math.min(a,b);x<=Math.max(a,b);x++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
-      const vcorr=(a,b,x)=>{ for(let y=Math.min(a,b);y<=Math.max(a,b);y++) if(g[y]&&g[y][x]!==undefined)g[y][x]="."; };
-      room(2,11,5,3); room(8,7,5,3); room(15,2,5,3); room(2,2,4,3); room(15,10,5,4); // 入口/中央/ボス/北西/南東
-      hcorr(4,18,12); vcorr(2,12,3); vcorr(2,12,18); vcorr(7,12,10); hcorr(10,18,4);
-      [[10,8],[12,8],[4,12],[17,11],[3,3],[16,3]].forEach(([x,y])=>{ if(g[y]&&g[y][x]===".")g[y][x]="r"; }); // 岩
-      g[2][17]="B"; g[12][3]="X"; // 層ボス（北東の部屋）/ 出口（入口）→フィールド
-      return {grid:g,W,H,spawn:{x:5,y:12}};
+      // 広い迷宮（画面を数回スクロール）。部屋を通路で連結＝入口→…→ボス。宝箱あり
+      const W=32,H=24; const g=Array.from({length:H},()=>Array(W).fill("#"));
+      const room=(x,y,w,h)=>{ for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++) if(g[j]&&g[j][i]!==undefined)g[j][i]="."; };
+      const hc=(a,b,y)=>{ for(let i=Math.min(a,b);i<=Math.max(a,b);i++) if(g[y]&&g[y][i]!==undefined)g[y][i]="."; };
+      const vc=(a,b,x)=>{ for(let j=Math.min(a,b);j<=Math.max(a,b);j++) if(g[j]&&g[j][x]!==undefined)g[j][x]="."; };
+      const R=[ {x:2,y:19,w:5,h:4}, {x:2,y:11,w:5,h:4}, {x:9,y:12,w:6,h:4}, {x:9,y:3,w:5,h:4}, {x:17,y:4,w:6,h:4}, {x:25,y:3,w:5,h:5}, {x:24,y:12,w:6,h:5}, {x:16,y:15,w:6,h:5}, {x:25,y:19,w:5,h:4} ];
+      R.forEach(r=>room(r.x,r.y,r.w,r.h));
+      const cen=r=>({x:r.x+(r.w>>1), y:r.y+(r.h>>1)});
+      const link=(a,b)=>{ const A=cen(R[a]),B=cen(R[b]); hc(A.x,B.x,A.y); vc(A.y,B.y,B.x); };
+      [[0,1],[1,2],[2,3],[3,4],[4,5],[2,7],[7,6],[6,5],[7,8],[6,8]].forEach(([a,b])=>link(a,b));
+      [[11,13],[19,5],[27,5],[18,17],[26,13],[12,20],[20,15]].forEach(([x,y])=>{ if(g[y]&&g[y][x]===".")g[y][x]="r"; });
+      const cb=cen(R[5]); g[cb.y][cb.x]="B";               // 層ボス（最奥）
+      const r0=R[0]; g[r0.y+1][r0.x+1]="X";                 // 出口（入口の部屋・端）
+      [R[8],R[3]].forEach(r=>{ const c=cen(r); if(g[c.y][c.x]===".")g[c.y][c.x]="C"; }); // 宝箱
+      return {grid:g,W,H,spawn:cen(R[0])};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
     function healFull(a){ a.hp=a.maxHp; a.mp=a.maxMp; }
@@ -1091,18 +1097,25 @@
         const nx=world.px+dirx*SPD; if(!blocked(nx,world.py)){ world.px=nx; moved+=Math.abs(dirx*SPD); }
         const ny=world.py+diry*SPD; if(!blocked(world.px,ny)){ world.py=ny; moved+=Math.abs(diry*SPD); }
       }
-      // 乗っているタイルで インタラクト判定
-      const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const c=tileChar(tx,ty);
+      // インタラクト判定：通り抜け系(門/塔/出口)は乗ったタイル、固い建物/人は「隣接」で反応
+      const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const here=tileChar(tx,ty);
       const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす" };
-      let newCtx = ctxMap[c]||null;
-      if(c==="X") newCtx = world.area==="town" ? "フィールドへ でる" : "フィールドへ もどる";
+      const WALK_ON=new Set(["D","B","T","X"]); const ADJACENT=new Set(["I","S","F","G","N","V"]);
+      let tc=null;
+      if(WALK_ON.has(here)) tc=here;
+      else for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){ const cc=tileChar(tx+dx,ty+dy); if(ADJACENT.has(cc)){ tc=cc; break; } }
+      actionTargetC=tc;
+      let newCtx = tc?(ctxMap[tc]||null):null;
+      if(tc==="X") newCtx = world.area==="town" ? "フィールドへ でる" : "フィールドへ もどる";
       if(newCtx!==actionCtx){ actionCtx=newCtx; const ab=document.getElementById("world-action"); if(actionCtx){ ab.textContent=actionCtx; ab.classList.remove("hidden"); } else ab.classList.add("hidden"); }
+      if(here==="C"){ collectChest(tx,ty); }
+      const c=here;
       // エンカウント（ダンジョンの床 / フィールドの草原）
-      if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.2){ world.dist=0; if(Math.random()<0.16) startEncounter(false); } } }
-      else if(world.area==="field" && c==="g"){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.4){ world.dist=0; if(Math.random()<0.11) startEncounter(false); } } }
+      if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.2){ world.dist=0; if(Math.random()<0.2) startEncounter(false); } } }
+      else if(world.area==="field" && c==="g"){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.4){ world.dist=0; if(Math.random()<0.14) startEncounter(false); } } }
     }
     function doAction(){
-      const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const c=tileChar(tx,ty);
+      const c=actionTargetC; if(!c)return;
       if(c==="I"){ world.party.forEach(healFull); updateWorldHead(); SFX.heal&&SFX.heal(); alert("宿屋で やすんだ。HP/MPが 全回復！"); }
       else if(c==="S"){ showShop(); }
       else if(c==="F"){ fuseSel=[]; showFuse(); renderFuse(); }
@@ -1147,7 +1160,7 @@
       // 地面ベース（草/床）を全タイルの下地に（層テーマ色）
       if(town){ wctx.fillStyle=th.g; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.g2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); }
       else { wctx.fillStyle=th.d; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle=th.d2; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); }
-      const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; let dw=TS, dh=TS*ih/iw; if(dh>TS*1.8)dh=TS*1.8; wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx, sy+TS-dh, dw, dh); return; }
+      const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; const big="ISFG".includes(c); let dw=big?TS*1.9:TS; let dh=dw*ih/iw; const maxh=big?TS*2.7:TS*1.8; if(dh>maxh)dh=maxh; wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx+(TS-dw)/2, sy+TS-dh, dw, dh); return; }
       const cxv=sx+TS/2;
       const blob=(x,y,r,col)=>{ wctx.fillStyle=col; wctx.beginPath(); wctx.arc(x,y,r,0,7); wctx.fill(); };
       const house=(wall,roof,label)=>{ wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.fillRect(sx+5,sy+TS-6,TS-10,5); wctx.fillStyle=wall; wctx.fillRect(sx+5,sy+13,TS-10,TS-15); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(sx+TS-1,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="rgba(255,255,255,0.18)"; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(cxv,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(cxv-3,sy+19,6,9); wctx.fillStyle="#bfe0ff"; wctx.fillRect(sx+7,sy+16,4,4); wctx.fillRect(sx+TS-11,sy+16,4,4); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-1); };
@@ -1163,6 +1176,7 @@
         case "r": { blob(cxv,sy+TS/2,12,"#5d586e"); blob(cxv-3,sy+TS/2-3,6,"#736d86"); wctx.fillStyle="rgba(0,0,0,0.3)"; wctx.beginPath(); wctx.arc(cxv+3,sy+TS/2+4,7,0,7); wctx.fill(); break; }
         case ".": { wctx.fillStyle="#332e48"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3e3954"; const s2=8; for(let yy=0;yy<TS;yy+=s2){ const off=((yy/s2)%2)*(s2/2); for(let xx=-off;xx<TS;xx+=s2){ wctx.fillRect(sx+xx+1,sy+yy+1,s2-2,s2-2); } } break; }
         case "s": { wctx.fillStyle=th.s; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="rgba(0,0,0,0.06)"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),2,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); break; }
+        case "C": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,9,3,0,0,7); wctx.fill(); wctx.fillStyle="#7a4a20"; wctx.fillRect(sx+7,sy+13,TS-14,TS-16); wctx.fillStyle="#9a6230"; wctx.fillRect(sx+7,sy+10,TS-14,6); wctx.fillStyle="#ffd24a"; wctx.fillRect(sx+7,sy+15,TS-14,2); wctx.fillRect(cxv-1,sy+13,2,5); break; }
         case "h": { const roofs=["#c0504d","#b07a3a","#5b86c0","#7a9a3a","#a05ac0"]; house("#e6d2a8",roofs[rb(0)%roofs.length],""); break; }
         case "I": house("#e6d2a8","#c0504d","宿"); break;
         case "S": house("#e6d2a8","#b07a3a","武"); break;
@@ -1394,7 +1408,8 @@
       SFX.win&&SFX.win();
       const boss=run.context==="boss"; let exp=0,gold=0; const drops=[],recruits=[];
       run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.035){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } if(e.isBoss&&DROP_MON.length&&Math.random()<0.1){ if(save.box.length+recruits.length<MAX_BOX){ const dm=newMember(DROP_MON[Math.floor(Math.random()*DROP_MON.length)],e.level); recruits.push(dm); markSeen(dm.speciesId); } } });
-      const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0))); // アバター パッシブ
+      if(Math.random()<0.03) drops.push(rollEnchant(run.floor)); // 極低確率：エンチャント装備
+      const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0)));
       let gemGain = Math.random()<0.12 ? (1+Math.floor(Math.random()*2)) : 0; // ジェムは たまに少し
       const ups=[];
       run.allies.forEach(al=>{ const m=findMember(al.uid); if(!m)return; const before=m.level; m.exp+=exp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}`); refreshAlly(al,m);} });
@@ -1417,6 +1432,11 @@
       el.result.classList.remove("hidden"); el.resultMsg.textContent="… ぜんめつ …"; el.resultDetail.textContent="きを うしなった…\n🏨 さいごに たちよった 街の 宿屋で めざめた。（HP/MP 全回復）"; }
 
     function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.6,0.22+floor*0.02); if(Math.random()>chance)return null; const ec=boss?0.4:Math.min(0.2,floor*0.012),rc=boss?0.45:Math.min(0.4,0.12+floor*0.02),r=Math.random(); let tier="common"; if(r<ec)tier="epic"; else if(r<ec+rc)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
+    // エンチャント装備（既存装備＋特有効果。微弱強化のユニーク系。極低確率ドロップ/宝箱）
+    let enchCounter=0;
+    const ENCH=[ {ef:"crit",pre:"かいしんの",ic:"⚔️"},{ef:"guard",pre:"まもりの",ic:"🛡️"},{ef:"drain",pre:"きゅうけつの",ic:"⚔️"},{ef:"regen",pre:"いやしの",ic:"💍"},{ef:"twin",pre:"れんげきの",ic:"⚔️"} ];
+    function rollEnchant(floor){ const e=ENCH[Math.floor(Math.random()*ENCH.length)]; const slot=(e.ef==="guard")?"armor":(e.ef==="regen"?"acc":"weapon"); const b=2+Math.floor((floor||1)/3); const it={id:"ench_"+(enchCounter++),kind:"equip",name:e.pre+(slot==="weapon"?"つるぎ":slot==="armor"?"よろい":"おまもり"),icon:e.ic,slot,tier:"epic",effect:e.ef,ench:true}; if(slot==="weapon")it.atk=4+b; else if(slot==="armor"){it.def=3+b;it.hp=b*2;} else {it.def=2+b;it.spd=2;} return it; }
+    function collectChest(tx,ty){ world.grid[ty][tx]="."; const gold=20+Math.floor(Math.random()*30)+(world.floor*3); save.gold=(save.gold||0)+gold; let extra=""; if(Math.random()<0.45){ const it=rollEnchant(world.floor); save.inventory.push(it); extra=` ＋ ${it.icon}${it.name}（エンチャント）`; } else { const d=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); save.inventory.push(d); extra=` ＋ ${d.icon}${d.name}`; } persist(); SFX.buy&&SFX.buy(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); alert(`📦 宝箱を 開けた！ 💰+${gold}G${extra}`); }
     function confirmFlee(){ if(run.context==="boss"){ log("層ボスからは にげられない！"); return; } if(confirm("にげて フィールドに もどりますか？\n（このせんとうの 戦利品は もらえません）")){ returnToField(); } }
 
     function endRun(wiped){ busy=true; hideAllPanels(); if(run.deepestCleared>(save.bestDepth||0))save.bestDepth=run.deepestCleared;
@@ -1435,7 +1455,7 @@
     document.getElementById("world-menu").addEventListener("click",()=>showMenu());
     document.getElementById("menu-close").addEventListener("click",()=>{ document.getElementById("menu-overlay").classList.add("hidden"); if(world&&world.area==="town"){ syncParty(); world.party.forEach(healFull); } showWorld(); });
     document.querySelectorAll(".mtab").forEach(b=>b.addEventListener("click",()=>{ menuTab=b.dataset.mt; renderMenu(); }));
-    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
+    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-floor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1); let nf=(save.floor||1)+(ff.dataset.floor==="up"?1:-1); nf=Math.max(1,Math.min(maxF,nf)); if(nf!==save.floor){ save.floor=nf; persist(); document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
     document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); audioInit(); audioResume(); curBGM=null; playBGM("town"); });
     document.getElementById("dialogue").addEventListener("click",advanceDlg);
     document.getElementById("go-fuse").addEventListener("click",()=>{ fuseSel=[]; showFuse(); renderFuse(); });
