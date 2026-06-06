@@ -416,7 +416,25 @@
       }
     })();
     // 画像の一括割り当て：明示SKINSの無い種に、実在画像(img_list.js)を順に割当（足りない分は循環。後で個別差し替え可）
-    (function assignImages(){ const L=(window.IMG_FILES||[]).filter(f=>!/^avatar_/.test(f)); if(!L.length)return; let k=0; for(const id in SPECIES){ if(!SKINS[id]){ SKINS[id]="img/"+L[k%L.length]; k++; } } })();
+    // 生成モンスターの自動割当は「汎用モンスター画像(m##/c0#_###)」のみ使用（家/キャラ画像が混ざらないように）
+    (function assignImages(){ const L=(window.IMG_FILES||[]).filter(f=>/^m\d+\.png$/.test(f)||/^c0\d_\d+\.png$/.test(f)); if(!L.length)return; let k=0; for(const id in SPECIES){ if(!SKINS[id]){ SKINS[id]="img/"+L[k%L.length]; k++; } } })();
+    // 一部モンスターを ぴぽや風 実イラストに差し替え（手描き種の見栄えUP）
+    Object.assign(SKINS,{
+      dragon:"img/character_monster_dragon_01_red.png", dragonlord:"img/character_monster_dragon_02_red.png", bahamut:"img/character_monster_dragon_03_purple.png", drake:"img/character_monster_dragon_01_green.png", hydra:"img/character_monster_dragon_02_green.png",
+      golem:"img/character_monster_golem_gray.png", titan:"img/character_monster_golem_brown.png",
+      ghost:"img/character_monster_ghost_white.png", wraith:"img/character_monster_ghost_black.png",
+      imp:"img/character_monster_devil_red.png", archfiend:"img/character_monster_devil_purple.png",
+      goblin:"img/character_monster_goblin_01.png", kobold:"img/character_monster_goblin_02.png",
+      wight:"img/character_monster_frankenstein_01_green.png", ghoul:"img/character_monster_frankenstein_02_blue.png",
+      myco:"img/character_monster_hana_01.png", woodworm:"img/character_monster_hana_02.png",
+      gremlin:"img/character_monster_gargoyle_purple.png", wisp:"img/character_monster_hi_red.png",
+    });
+    // 建物・洞窟・井戸・階段・NPC を 実画像に（タイル上に立つ表示）
+    Object.assign(TILE_IMG,{
+      I:"img/ie_front_01_red.png", S:"img/ie_front_02_blue.png", F:"img/ie_front_03_green.png", G:"img/ie_front_04_brown.png", h:"img/ie_side_01_brown.png",
+      o:"img/ido_gray.png", D:"img/ana_gray.png", X:"img/kaidan_down_stone.png",
+      B:"img/character_monster_devil_red.png", N:"img/character_madoshi_01_green.png", V:"img/character_murabito_child_01_man_blue.png",
+    });
     // 層が深いほど 強い種が出る（ティア制・敵の多様化）。synth種は ここに含めない＝野生に出ない
     const WILD_TIERS=[
       {max:5,  pool:["slime","bat","ghost","imp","myco","wisp","fairy","goblin","kobold","rat","woodworm"]},
@@ -1105,7 +1123,7 @@
       // 地面ベース（草/床）を全タイルの下地に
       if(town){ wctx.fillStyle="#5aa84e"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#54a047"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,2); wctx.fillStyle="#66b659"; wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); }
       else { wctx.fillStyle="#2b2440"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#322b48"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); }
-      const im=getImg(TILE_IMG[c]); if(im){ wctx.drawImage(im,sx,sy,TS,TS); return; }
+      const im=getImg(TILE_IMG[c]); if(im){ const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1; let dw=TS, dh=TS*ih/iw; if(dh>TS*1.8)dh=TS*1.8; wctx.imageSmoothingEnabled=true; wctx.drawImage(im, sx, sy+TS-dh, dw, dh); return; }
       const cxv=sx+TS/2;
       const blob=(x,y,r,col)=>{ wctx.fillStyle=col; wctx.beginPath(); wctx.arc(x,y,r,0,7); wctx.fill(); };
       const house=(wall,roof,label)=>{ wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.fillRect(sx+5,sy+TS-6,TS-10,5); wctx.fillStyle=wall; wctx.fillRect(sx+5,sy+13,TS-10,TS-15); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(sx+TS-1,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="rgba(255,255,255,0.18)"; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(cxv,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(cxv-3,sy+19,6,9); wctx.fillStyle="#bfe0ff"; wctx.fillRect(sx+7,sy+16,4,4); wctx.fillRect(sx+TS-11,sy+16,4,4); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-1); };
@@ -1209,7 +1227,7 @@
     function drawMonster(ctx, sid, size, boss){
       ctx.clearRect(0,0,size,size);
       const im=getImg(SKINS[sid]); // フリー素材があれば 画像を使う
-      if(im){ ctx.fillStyle="#0006"; ctx.beginPath(); ctx.ellipse(size/2,size-5,size*0.3,4,0,0,7); ctx.fill(); ctx.drawImage(im,2,1,size-4,size-4); if(boss){ ctx.fillStyle="#ffd24a"; ctx.beginPath(); ctx.moveTo(size*0.3,size*0.18); ctx.lineTo(size*0.3,size*0.08); ctx.lineTo(size*0.42,size*0.14); ctx.lineTo(size*0.5,size*0.05); ctx.lineTo(size*0.58,size*0.14); ctx.lineTo(size*0.7,size*0.08); ctx.lineTo(size*0.7,size*0.18); ctx.closePath(); ctx.fill(); } return; }
+      if(im){ ctx.fillStyle="#0006"; ctx.beginPath(); ctx.ellipse(size/2,size-5,size*0.3,4,0,0,7); ctx.fill(); const iw=im.naturalWidth||im.width||1, ih=im.naturalHeight||im.height||1, av=size-4; let dw=av,dh=av; if(iw>ih){ dh=av*ih/iw; } else { dw=av*iw/ih; } ctx.imageSmoothingEnabled=true; ctx.drawImage(im, 2+(av-dw)/2, 2+(av-dh), dw, dh); if(boss){ ctx.fillStyle="#ffd24a"; ctx.beginPath(); ctx.moveTo(size*0.3,size*0.18); ctx.lineTo(size*0.3,size*0.08); ctx.lineTo(size*0.42,size*0.14); ctx.lineTo(size*0.5,size*0.05); ctx.lineTo(size*0.58,size*0.14); ctx.lineTo(size*0.7,size*0.08); ctx.lineTo(size*0.7,size*0.18); ctx.closePath(); ctx.fill(); } return; }
       const L=MON_LOOK[sid]||(SPECIES[sid]&&SPECIES[sid].look)||{c:"#9a90ad",t:"blob"}; const cx=size/2, cy=size/2+2, R=size*0.34*(L.big||boss?1.12:1);
       ctx.save(); ctx.lineWidth=Math.max(1.5,size*0.03); ctx.strokeStyle="#1a1426";
       const eyes=(ex,ey,r)=>{ ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(cx-ex,cy-ey,r,0,7); ctx.arc(cx+ex,cy-ey,r,0,7); ctx.fill(); ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(cx-ex,cy-ey,r*0.5,0,7); ctx.arc(cx+ex,cy-ey,r*0.5,0,7); ctx.fill(); };
