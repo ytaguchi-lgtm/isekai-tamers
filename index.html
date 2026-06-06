@@ -90,6 +90,7 @@
     @keyframes btOut { from{opacity:1;background:#0a0a14;} to{opacity:0;background:#0a0a14;} }
     /* 会話 */
     #dialogue { position:fixed; inset:0; z-index:58; display:flex; align-items:flex-end; justify-content:center; padding:16px; }
+    #dlg-portrait { position:absolute; bottom:96px; left:50%; transform:translateX(-50%); width:min(86vw,420px); max-height:62vh; object-fit:contain; object-position:bottom; filter:drop-shadow(0 6px 16px rgba(0,0,0,0.6)); pointer-events:none; }
     #dialogue .dlg-box { width:100%; max-width:460px; background:linear-gradient(#1c1830,#120e1f); border:2px solid var(--gold); border-radius:14px; padding:14px 16px; box-shadow:0 6px 24px rgba(0,0,0,0.6); cursor:pointer; }
     #dialogue .dlg-name { color:var(--gold); font-size:0.92rem; margin-bottom:6px; font-weight:bold; }
     #dialogue .dlg-text { font-size:1.0rem; line-height:1.7; color:#f3efe6; min-height:3.4em; }
@@ -310,6 +311,7 @@
 
   <!-- 会話ウィンドウ -->
   <div id="dialogue" class="hidden">
+    <img id="dlg-portrait" class="hidden" alt="">
     <div class="dlg-box">
       <div class="dlg-name" id="dlg-name"></div>
       <div class="dlg-text" id="dlg-text"></div>
@@ -991,8 +993,12 @@
     let world=null, pendingResult=null, worldLoopOn=false, menuOpen=false, rafStarted=false;
     /* ===== 会話エンジン＆ストーリー ===== */
     let dlg=null, dlgOpen=false;
+    const PORTRAIT_FILES=Array.from({length:20},(_,i)=>`img/portrait_${String(i).padStart(2,"0")}.jpg`);
+    const PORTRAIT_FIXED={ "ナビ":0,"カイ":1,"管理者":2,"ミラ":3,"塔の声":2 };
+    function portraitFor(name){ if(!name||name==="???"||name==="あなた")return null; let idx; if(PORTRAIT_FIXED[name]!=null)idx=PORTRAIT_FIXED[name]; else { let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; idx=4+(h%(PORTRAIT_FILES.length-4)); } return PORTRAIT_FILES[idx%PORTRAIT_FILES.length]; }
     function runDialogue(lines, onDone){ if(!lines||!lines.length){ if(onDone)onDone(); return; } dlg={lines,i:0,onDone}; dlgOpen=true; document.getElementById("dialogue").classList.remove("hidden"); showDlgLine(); }
-    function showDlgLine(){ const l=dlg.lines[dlg.i]; const nm=(typeof l==="object")?l.n:""; const tx=(typeof l==="object")?l.t:l; const ne=document.getElementById("dlg-name"); ne.textContent=nm||""; ne.style.display=nm?"block":"none"; document.getElementById("dlg-text").textContent=tx; }
+    function showDlgLine(){ const l=dlg.lines[dlg.i]; const nm=(typeof l==="object")?l.n:""; const tx=(typeof l==="object")?l.t:l; const ne=document.getElementById("dlg-name"); ne.textContent=nm||""; ne.style.display=nm?"block":"none"; document.getElementById("dlg-text").textContent=tx;
+      const p=portraitFor(nm); const pe=document.getElementById("dlg-portrait"); if(pe){ if(p){ if(pe.getAttribute("src")!==p)pe.src=p; pe.classList.remove("hidden"); } else pe.classList.add("hidden"); } }
     function advanceDlg(){ if(!dlgOpen)return; SFX.select&&SFX.select(); dlg.i++; if(dlg.i>=dlg.lines.length){ dlgOpen=false; document.getElementById("dialogue").classList.add("hidden"); const cb=dlg.onDone; dlg=null; if(cb)cb(); } else showDlgLine(); }
     const PROLOGUE_STORY=[ {n:"ナビ",t:"フルダイブ型VR世界《アインクラッド・テイマーズ》。ある日、ログアウトが 消えた。"}, {n:"ナビ",t:"きみは 剣を持てない【調教師（テイマー）】。契約した魔物だけが きみのために 戦う。"}, {n:"ナビ",t:"各層の ボスを 倒して 上へ。30層の頂上をめざし、脱出の刻を 信じて。"} ];
     const STORY_FLOOR={
