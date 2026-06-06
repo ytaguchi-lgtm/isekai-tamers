@@ -60,7 +60,8 @@
     .ecard { position:relative; overflow:hidden; border-radius:12px; padding:2px; }
     .ecard.dead { opacity:0.45; } .ecard.shake { animation:shake 0.3s; }
     .ecard.selectable { outline:2px dashed var(--gold); outline-offset:2px; }
-    .ecard .ec-label { text-align:center; font-size:0.64rem; color:#ffb3b3; margin-top:-2px; max-width:84px; line-height:1.15; word-break:break-word; }
+    .ecard { display:flex; flex-direction:column; align-items:center; }
+    .ecard .ec-label { text-align:center; font-size:0.66rem; color:#ffb3b3; margin:0 auto; max-width:138px; line-height:1.15; word-break:break-word; }
     .mon-spr { width:132px; height:132px; } .mon-spr-s { width:48px; height:48px; }
     .selectable { outline:2px dashed var(--gold); outline-offset:1px; cursor:pointer; }
     @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
@@ -963,7 +964,7 @@
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
     const TS=32, VIEW=14; // タイル32px、表示14x14（画面を広く活用）
     const SOLID_TOWN=new Set(["t","o","w","#","h","I","S","F","G","N","V"]); // 木/噴水/水/壁/家/施設/人に突き当たる
-    const SOLID_FIELD=new Set(["w","t"]);
+    const SOLID_FIELD=new Set(["w","t","D","T"]); // 水/木/塔(ダンジョン)/街ゲートに突き当たる
     const SOLID_DUN=new Set(["#","r"]);
     function solidSet(){ return world.area==="town"?SOLID_TOWN:(world.area==="field"?SOLID_FIELD:SOLID_DUN); }
     let world=null, pendingResult=null, worldLoopOn=false, menuOpen=false, rafStarted=false;
@@ -1029,6 +1030,26 @@
       29:{hunt:"終局の番兵",coll:"終局の証",brief:[{n:"カイ",t:"次が 最上層だ。管理者が 待ってる。"},{n:"カイ",t:"番兵を 倒して『終局の証』を 集めろ。お前と お前の 魔物、信じてるぜ。"}],done:[{n:"カイ",t:"…準備は できたな。扉の 先で 決着だ。"}]},
       30:{hunt:"管理者の影",coll:"頂きの鍵",brief:[{n:"管理者",t:"よくぞ のぼってきた、調教師よ。だが この塔は たやすく 還さぬ。"},{n:"管理者",t:"わが 影を 退け、『頂きの鍵』を 得てみせよ。できるならば、な。"}],done:[{n:"ナビ",t:"扉が ひらく…！ いよいよ 管理者 本体だ。きみと 魔物たちの 絆、見せてやろう！"}]},
     };
+    Object.assign(QUEST_LORE,{
+      6:{hunt:"いたずら風魔",coll:"風車の歯車",brief:[{n:"粉屋",t:"風が 止まって 風車が 回らねえ。風魔の いたずらだ…！"},{n:"粉屋",t:"風魔を 追い払い、外れた『風車の歯車』を 拾って きて くれ。パンが 焼けねえんだ。"}],done:[{n:"粉屋",t:"おお 回った！ 助かったよ、若い テイマーさん。"}]},
+      7:{hunt:"霧隠れ",coll:"霧払いの灯",brief:[{n:"旅の女",t:"この 霧の中、何人もの 旅人が 帰らないの…。霧の中に 何かが いる。"},{n:"旅の女",t:"霧隠れを 討って、『霧払いの灯』を 集めて。道しるべに なるはずよ。"}],done:[{n:"旅の女",t:"視界が ひらけた…！ あなたの 灯が みんなを 救うわ。"}]},
+      9:{hunt:"雪喰らい",coll:"凍らぬ炎",brief:[{n:"猟師",t:"吹雪で 仲間が 遭難した。雪喰らいが 嗅ぎつける 前に…！"},{n:"猟師",t:"雪喰らいを 倒し、『凍らぬ炎』を 集めて くれ。あれが あれば 暖が とれる。"}],done:[{n:"猟師",t:"全員 無事だ！ この恩は 忘れねえ。"}]},
+      11:{hunt:"砂蟲",coll:"オアシスの雫",brief:[{n:"隊商の長",t:"砂嵐の 下に 砂蟲が ひそむ。隊商が 進めん…。"},{n:"隊商の長",t:"砂蟲を 退け、『オアシスの雫』を 確保して くれ。水なくして 砂は 越えられぬ。"}],done:[{n:"隊商の長",t:"道が 開けた。ともに 砂を 越えよう、テイマーよ。"}]},
+      12:{hunt:"渓谷の主",coll:"吊り橋の要石",brief:[{n:"橋守",t:"渓谷の 吊り橋が 落ちかけてる。主が 暴れて 要石を 奪ったんだ。"},{n:"橋守",t:"渓谷の主を 鎮め、『吊り橋の要石』を 取り戻して くれ。"}],done:[{n:"橋守",t:"橋が 直った！ これで 向こうの 街にも 渡れる。"}]},
+      13:{hunt:"亡霊騎士",coll:"古城の紋章",brief:[{n:"古城の主",t:"我が城は 呪いに 蝕まれ、亡霊騎士が さまよう…。"},{n:"古城の主",t:"騎士たちを 鎮め、散らばった『古城の紋章』を 集めよ。呪いを 解く 鍵だ。"}],done:[{n:"古城の主",t:"…礼を言う。城に 静寂が 戻った。奥の 主は きみに 託す。"}]},
+      14:{hunt:"海妖",coll:"難破船の財",brief:[{n:"漁師",t:"海妖が 暴れて 漁に 出られん。沖の 難破船にも 近づけねえ。"},{n:"漁師",t:"海妖を 静め、『難破船の財』を 引き上げて くれ。山分けだ！"}],done:[{n:"漁師",t:"大漁だ！ 海が 穏やかに なった。ありがとよ。"}]},
+      16:{hunt:"紅葉の獣",coll:"錦の落ち葉",brief:[{n:"紅葉守",t:"紅葉の 林に 獣が 棲みつき、人を 襲うように なった…。"},{n:"紅葉守",t:"獣を しずめ、色づいた『錦の落ち葉』を 集めて おくれ。祭りに 要るのです。"}],done:[{n:"紅葉守",t:"見事な 錦…！ 今年の 祭りは きみの おかげだ。"}]},
+      17:{hunt:"水晶喰い",coll:"無垢の水晶",brief:[{n:"細工師",t:"水晶喰いが 洞の 水晶を 食い荒らしておる…！"},{n:"細工師",t:"水晶喰いを 退け、『無垢の水晶』を 持ち帰って くれ。最高の 装備が 打てるぞ。"}],done:[{n:"細工師",t:"これほどの 水晶… 礼に 腕を ふるおう。"}]},
+      18:{hunt:"遺跡の番人",coll:"古代の歯車",brief:[{n:"考古学者",t:"廃都の 遺跡に 古代文明の 力が 眠っている。だが 番人が…。"},{n:"考古学者",t:"番人を 突破し、『古代の歯車』を 回収して くれ。塔の 秘密に 迫れるかも。"}],done:[{n:"考古学者",t:"これは…！ 塔は 古代人が 造ったのか。先へ 急ごう。"}]},
+      19:{hunt:"瘴気の主",coll:"解毒の霊草",brief:[{n:"薬師",t:"毒沼の 瘴気が 街に 流れ込み、皆 倒れて しまった…！"},{n:"薬師",t:"瘴気の主を 討ち、『解毒の霊草』を 集めて。早く しないと 手遅れに なる。"}],done:[{n:"薬師",t:"霊草が あれば 皆 救える！ 本当に ありがとう。"}]},
+      21:{hunt:"暴走機巧兵",coll:"動力核",brief:[{n:"技師",t:"歯車塔の 機巧兵が 暴走して 手が つけられん…！"},{n:"技師",t:"機巧兵を 止め、『動力核』を 回収して くれ。塔の 制御を 取り戻せる。"}],done:[{n:"技師",t:"制御 回復！ きみは 機械にも 強いな。"}]},
+      22:{hunt:"樹海の主",coll:"世界樹の種",brief:[{n:"森の民",t:"樹海が ざわめき、迷いの 胞子で 誰も 帰れなく なった…。"},{n:"森の民",t:"樹海の主を 鎮め、『世界樹の種』を 持ち帰って。森の 怒りが 鎮まる。"}],done:[{n:"森の民",t:"森が 微笑んでいる。きみは 森に 認められた。"}]},
+      23:{hunt:"火霊",coll:"鎮火の宝珠",brief:[{n:"火口の巫女",t:"火山が 怒り、火霊が あふれ出した。噴火の 前兆です…！"},{n:"火口の巫女",t:"火霊を 鎮め、『鎮火の宝珠』を 集めて ください。街を 救うために。"}],done:[{n:"火口の巫女",t:"山が 鎮まった…！ あなたは 街の 英雄です。"}]},
+      24:{hunt:"氷の封獣",coll:"封解の氷片",brief:[{n:"氷晶の老師",t:"氷河の 奥に 封じられし 獣が 目覚めようと している…。"},{n:"氷晶の老師",t:"封獣を 抑え、『封解の氷片』を 集めよ。封印を 結び直す のだ。"}],done:[{n:"氷晶の老師",t:"封印 完了。よくぞ 持ちこたえた、若き テイマーよ。"}]},
+      26:{hunt:"影喰らい",coll:"ひとひらの光",brief:[{n:"ナビ",t:"影の街…。光が ほとんど 届かない。影喰らいが 人の 心まで 蝕むみたい。"},{n:"ナビ",t:"影喰らいを 払い、『ひとひらの光』を 集めよう。きみの 魔物の 絆が 光に なる。"}],done:[{n:"ナビ",t:"闇が 退いた…！ きみたちの 絆は 影にも 負けない。"}]},
+      27:{hunt:"流星の獣",coll:"星の砂",brief:[{n:"星詠み",t:"星海に 流星の獣が 降り、星の 巡りが 乱れている…。"},{n:"星詠み",t:"獣を 鎮め、『星の砂』を 集めて。星が ふたたび 道を 示すだろう。"}],done:[{n:"星詠み",t:"星が 整った。きみの 行く先に 祝福を。"}]},
+      28:{hunt:"堕ちた使徒",coll:"聖印のかけら",brief:[{n:"神官長",t:"神殿都市の 使徒が 堕ち、聖印が 砕けて しまった…。"},{n:"神官長",t:"堕ちた 使徒を 救い、『聖印のかけら』を 集めよ。最上層への 資格と なる。"}],done:[{n:"神官長",t:"聖印 再生…！ 神の 加護が きみと 魔物に あらんことを。"}]},
+    });
     function genLore(f){ const town=floorInfo(f).town; const foes=["凶暴な魔物","さまよう亡霊","群れる魔獣","狂乱の幻獣"]; const items=["失われた遺物","封印の鍵片","古びた護符","聖なる結晶"]; const giver=["街の衛兵","老いた賢者","旅の商人","祠の巫女"]; const i=f%foes.length,j=(f+1)%items.length,g=(f+2)%giver.length; return { hunt:foes[i], coll:items[j], brief:[ {n:giver[g],t:`${town}にも 塔の 異変が…。${foes[i]}が 増え、人々は おびえている。`}, {n:giver[g],t:`どうか ${foes[i]}を しずめ、『${items[j]}』を 集めて ほしい。それが 上へ 進む 鍵に なる。`} ], done:[ {n:giver[g],t:`見事…！『${items[j]}』の 力で ボスへの 道が ひらいた。武運を。`} ] }; }
     function loreFor(f){ return QUEST_LORE[f]||genLore(f); }
     function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0}; return save.quest[f]; }
@@ -1132,7 +1153,7 @@
       // インタラクト判定：通り抜け系(門/塔/出口)は乗ったタイル、固い建物/人は「隣接」で反応
       const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const here=tileChar(tx,ty);
       const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす" };
-      const WALK_ON=new Set(["D","B","T","X"]); const ADJACENT=new Set(["I","S","F","G","N","V"]);
+      const WALK_ON=new Set(["B","X"]); const ADJACENT=new Set(["I","S","F","G","N","V","D","T"]);
       let tc=null;
       if(WALK_ON.has(here)) tc=here;
       else for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){ const cc=tileChar(tx+dx,ty+dy); if(ADJACENT.has(cc)){ tc=cc; break; } }
@@ -1445,8 +1466,8 @@
     async function onBattleWon(){ busy=true; phase="clear"; hideAllPanels();
       SFX.win&&SFX.win();
       const boss=run.context==="boss"; let exp=0,gold=0; const drops=[],recruits=[];
-      run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.035){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } if(e.isBoss&&DROP_MON.length&&Math.random()<0.1){ if(save.box.length+recruits.length<MAX_BOX){ const dm=newMember(DROP_MON[Math.floor(Math.random()*DROP_MON.length)],e.level); recruits.push(dm); markSeen(dm.speciesId); } } });
-      if(Math.random()<0.03) drops.push(rollEnchant(run.floor)); // 極低確率：エンチャント装備
+      run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.015){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } if(e.isBoss&&Math.random()<0.04){ if(save.box.length+recruits.length<MAX_BOX){ const dm=newMember(e.speciesId,e.level); recruits.push(dm); markSeen(dm.speciesId); } } });
+      if(Math.random()<0.015) drops.push(rollEnchant(run.floor)); // 極低確率：エンチャント装備
       const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0)));
       let gemGain = Math.random()<0.12 ? (1+Math.floor(Math.random()*2)) : 0; // ジェムは たまに少し
       const ups=[];
@@ -1469,7 +1490,7 @@
     function loseBattle(){ busy=true; phase="clear"; hideAllPanels(); SFX.lose&&SFX.lose(); pendingResult=()=>{ enterArea("town", save.floor); };
       el.result.classList.remove("hidden"); el.resultMsg.textContent="… ぜんめつ …"; el.resultDetail.textContent="きを うしなった…\n🏨 さいごに たちよった 街の 宿屋で めざめた。（HP/MP 全回復）"; }
 
-    function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.6,0.22+floor*0.02); if(Math.random()>chance)return null; const ec=boss?0.4:Math.min(0.2,floor*0.012),rc=boss?0.45:Math.min(0.4,0.12+floor*0.02),r=Math.random(); let tier="common"; if(r<ec)tier="epic"; else if(r<ec+rc)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
+    function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.38,0.12+floor*0.012); if(Math.random()>chance)return null; const ec=boss?0.4:Math.min(0.2,floor*0.012),rc=boss?0.45:Math.min(0.4,0.12+floor*0.02),r=Math.random(); let tier="common"; if(r<ec)tier="epic"; else if(r<ec+rc)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
     // エンチャント装備（既存装備＋特有効果。微弱強化のユニーク系。極低確率ドロップ/宝箱）
     let enchCounter=0;
     const ENCH=[ {ef:"crit",pre:"かいしんの",ic:"⚔️"},{ef:"guard",pre:"まもりの",ic:"🛡️"},{ef:"drain",pre:"きゅうけつの",ic:"⚔️"},{ef:"regen",pre:"いやしの",ic:"💍"},{ef:"twin",pre:"れんげきの",ic:"⚔️"} ];
