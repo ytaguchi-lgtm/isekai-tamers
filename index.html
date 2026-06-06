@@ -327,7 +327,10 @@
     };
     const TILE_IMG = {};         // タイル記号(g,p,t,w,#,.,r,I,S,F,G,D,B,X,o) → 画像パス
     const _imgCache={};
-    function getImg(path){ if(!path)return null; let im=_imgCache[path]; if(im===undefined){ im=new Image(); im._ok=false; im.onload=()=>{im._ok=true;}; im.onerror=()=>{im._ok=false;}; im.src=path; _imgCache[path]=im; } return (im&&im._ok)?im:null; }
+    function getImg(path){ if(!path)return null; let im=_imgCache[path]; if(im===undefined){ im=new Image(); im._ok=false; im._err=false; im.onload=()=>{im._ok=true; if(typeof onAssetLoad==="function")onAssetLoad();}; im.onerror=()=>{im._err=true;}; im.src=path; _imgCache[path]=im; } return (im&&im._ok)?im:null; }
+    // 戦闘中に画像が読み込まれたら再描画（最初:手描き→読込後:画像 の切替を防ぐ補助）
+    function onAssetLoad(){ try{ if(run && el && el.enemyList && !document.getElementById("screen-dungeon").classList.contains("hidden")) renderBattle(); }catch(e){} }
+    function preloadBattleImgs(units){ const paths=[...new Set((units||[]).map(u=>SKINS[u.speciesId]).filter(Boolean))]; paths.forEach(getImg); return new Promise(res=>{ if(!paths.length){res();return;} const t0=Date.now(); const iv=setInterval(()=>{ const ok=paths.every(p=>{const im=_imgCache[p];return im&&(im._ok||im._err);}); if(ok||Date.now()-t0>800){ clearInterval(iv); res(); } },40); }); }
     function faceHTML(speciesId, sizeEm){ const s=SPECIES[speciesId]; const url=SKINS[speciesId]; const sz=sizeEm||1; return url ? `<img src="${url}" alt="${s.name}" style="width:${sz}em;height:${sz}em;object-fit:contain;">` : s.face; }
 
     /* 種族 */
@@ -697,7 +700,7 @@
 
     /* そだてる */
     let equipUid=null, equipFilter="weapon"; function curEquipMember(){ return findMember(equipUid); }
-    function renderEquip(){ const m=curEquipMember(); if(!m){showTown();return;} const s=SPECIES[m.speciesId],t=totalStats(m);
+    function renderEquip(){ const m=curEquipMember(); if(!m){showWorld();return;} const s=SPECIES[m.speciesId],t=totalStats(m);
       document.getElementById("equip-head").innerHTML=`${faceHTML(m.speciesId)} ${s.name}（Lv ${m.level}）　攻 ${t.atk} ／ 守 ${t.def} ／ HP ${t.maxHp} ／ MP ${t.maxMp}　<span style="color:#f0d060">💰${save.gold||0}</span>`;
       document.getElementById("equip-skills").innerHTML=`おぼえている スキル: ${skillSummary(m)}`;
       // 部位スロットを 添付のように 図の左右へ配置（タップでその部位を選ぶ）
@@ -1091,7 +1094,7 @@
       try{
         world.party.forEach(a=>{ a.status={}; a.guardUp=false; a.defending=false; });
         run={ allies: world.party, enemies:[], floor: world.floor, drops:[], recruits:[], gems:0, context:isBossBattle?"boss":"field" };
-        spawnEnemiesFor(world.floor, isBossBattle); showDungeon(); renderBattle(); playBGM(isBossBattle?"boss":"battle");
+        spawnEnemiesFor(world.floor, isBossBattle); await preloadBattleImgs(run.enemies.concat(run.allies)); showDungeon(); renderBattle(); playBGM(isBossBattle?"boss":"battle");
         run.order=null; run.turnIdx=0; run.cur=null; phase="player"; okSetup=true;
       }catch(err){ console.error("startEncounter setup error:",err); }
       // オーバーレイは何があっても必ず消す（黒画面固着の防止）
@@ -1296,7 +1299,7 @@
       el.result.classList.remove("hidden"); el.resultMsg.textContent="… ぜんめつ …"; el.resultDetail.textContent="きを うしなった…\n🏨 さいごに たちよった 街の 宿屋で めざめた。（HP/MP 全回復）"; }
 
     function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.6,0.22+floor*0.02); if(Math.random()>chance)return null; const ec=boss?0.4:Math.min(0.2,floor*0.012),rc=boss?0.45:Math.min(0.4,0.12+floor*0.02),r=Math.random(); let tier="common"; if(r<ec)tier="epic"; else if(r<ec+rc)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
-    function confirmFlee(){ if(run.context==="boss"){ log("層ボスからは にげられない！"); return; } if(confirm("にげて 街に もどりますか？\n（このせんとうの 戦利品は もらえません）")){ busy=true; world=null; showTown(); } }
+    function confirmFlee(){ if(run.context==="boss"){ log("層ボスからは にげられない！"); return; } if(confirm("にげて フィールドに もどりますか？\n（このせんとうの 戦利品は もらえません）")){ returnToField(); } }
 
     function endRun(wiped){ busy=true; hideAllPanels(); if(run.deepestCleared>(save.bestDepth||0))save.bestDepth=run.deepestCleared;
       let totalGain=0; const ups=[];
@@ -1342,7 +1345,7 @@
     document.getElementById("target-cancel").addEventListener("click",cancelTarget);
     el.enemyList.addEventListener("click",(e)=>{ const c=e.target.closest("[data-eti]"); if(c)onTargetTap("enemy",Number(c.dataset.eti)); });
     el.allyList.addEventListener("click",(e)=>{ const c=e.target.closest("[data-ati]"); if(c)onTargetTap("ally",Number(c.dataset.ati)); });
-    document.getElementById("back").addEventListener("click",()=>{ const f=pendingResult; pendingResult=null; el.result.classList.add("hidden"); if(f)f(); else showTown(); });
+    document.getElementById("back").addEventListener("click",()=>{ const f=pendingResult; pendingResult=null; el.result.classList.add("hidden"); if(f)f(); else showWorld(); });
     document.getElementById("reset").addEventListener("click",()=>{ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); renderTown(); } });
 
     enterArea("town", save.floor||1);
