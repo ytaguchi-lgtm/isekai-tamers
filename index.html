@@ -416,7 +416,7 @@
       }
     })();
     // 画像の一括割り当て：明示SKINSの無い種に、実在画像(img_list.js)を順に割当（足りない分は循環。後で個別差し替え可）
-    (function assignImages(){ const L=(window.IMG_FILES||[]); if(!L.length)return; let k=0; for(const id in SPECIES){ if(!SKINS[id]){ SKINS[id]="img/"+L[k%L.length]; k++; } } })();
+    (function assignImages(){ const L=(window.IMG_FILES||[]).filter(f=>!/^avatar_/.test(f)); if(!L.length)return; let k=0; for(const id in SPECIES){ if(!SKINS[id]){ SKINS[id]="img/"+L[k%L.length]; k++; } } })();
     // 層が深いほど 強い種が出る（ティア制・敵の多様化）。synth種は ここに含めない＝野生に出ない
     const WILD_TIERS=[
       {max:5,  pool:["slime","bat","ghost","imp","myco","wisp","fairy","goblin","kobold","rat","woodworm"]},
@@ -503,7 +503,29 @@
       bikiruto:{ name:"バイキルト",  icon:"📈", type:"status", status:"atkUp", target:"ally", mp:6, desc:"なかま1体の こうげきを あげる" },
     };
     const CONSUM={ potion:{name:"やくそう",heal:60,desc:"HP+60"}, hipotion:{name:"上やくそう",heal:160,desc:"HP+160"}, ether:{name:"まりょくの実",mp:25,desc:"MP+25"}, elixir:{name:"せかいじゅの しずく",revive:true,desc:"たおれた なかまを 復活＋全回復"} };
-    const AVATARS={ hero:{name:"ぼうけんしゃ",c:"#e8c66a",hat:"none"}, knight:{name:"きし",c:"#9ab0d0",hat:"helm"}, mage:{name:"まどうし",c:"#b58fe0",hat:"hat"}, ninja:{name:"しのび",c:"#6a6f7a",hat:"band"}, princess:{name:"おうじょ",c:"#f0a0c0",hat:"crown"} };
+    const AVATARS={
+      hero:{name:"ぼうけんしゃ", img:"img/avatar_00.png", c:"#e8c66a", pas:{exp:0.08}},
+      a1: {name:"だいだいの戦士", img:"img/avatar_01.png", c:"#e08a4a", pas:{atk:0.06}},
+      a2: {name:"あおの旅人",   img:"img/avatar_02.png", c:"#6a8fd0", pas:{spd:0.08}},
+      a3: {name:"くれないの姫",  img:"img/avatar_03.png", c:"#e07090", pas:{exp:0.10}},
+      a4: {name:"みどりの狩人",  img:"img/avatar_04.png", c:"#7aa860", pas:{gold:0.10}},
+      a5: {name:"あかずきん",    img:"img/avatar_05.png", c:"#d05050", pas:{def:0.06}},
+      a6: {name:"そうの剣士",    img:"img/avatar_06.png", c:"#90c4d8", pas:{atk:0.05,spd:0.04}},
+      a7: {name:"ももの踊り子",  img:"img/avatar_07.png", c:"#f0a0c0", pas:{spd:0.10}},
+      a8: {name:"だいだいの巫女",img:"img/avatar_08.png", c:"#e0a060", pas:{heal:0.12}},
+      a9: {name:"ばらの乙女",    img:"img/avatar_09.png", c:"#e070a0", pas:{exp:0.06,gold:0.06}},
+      a10:{name:"わかばの精",    img:"img/avatar_10.png", c:"#8fd070", pas:{def:0.05,exp:0.05}},
+      a11:{name:"しろのシスター",img:"img/avatar_11.png", c:"#d8d8e8", pas:{heal:0.15}},
+      a12:{name:"しろの剣士",    img:"img/avatar_12.png", c:"#e0e0e0", pas:{atk:0.08}},
+      a13:{name:"くろの巫女",    img:"img/avatar_13.png", c:"#7a6a8a", pas:{gold:0.12}},
+      a14:{name:"ねこむすめ",    img:"img/avatar_14.png", c:"#e0c060", pas:{spd:0.06,exp:0.05}},
+      a15:{name:"あかの舞姫",    img:"img/avatar_15.png", c:"#d06060", pas:{atk:0.05,def:0.05}},
+      a16:{name:"すみれの歌姫",  img:"img/avatar_16.png", c:"#a080d0", pas:{heal:0.10,exp:0.05}},
+      a17:{name:"ももいろ剣士",  img:"img/avatar_17.png", c:"#e090b0", pas:{atk:0.07}},
+      a18:{name:"こがねの占師",  img:"img/avatar_18.png", c:"#e0c050", pas:{gold:0.15}},
+      a19:{name:"あおの魔女",    img:"img/avatar_19.png", c:"#7090d0", pas:{spd:0.05,atk:0.05}},
+    };
+    function avatarPas(){ const a=AVATARS[save.avatar]||AVATARS.hero; return a.pas||{}; }
 
     /* 装備＆スキルブック */
     const ITEMS = {
@@ -618,7 +640,7 @@
     function expToNext(lv){ return Math.round(3*lv*lv + 12*lv + 8); }
     function findItem(uid){ return uid?save.inventory.find(i=>i.uid===uid):null; }
     function equipBonus(m){ const b={atk:0,def:0,hp:0,spd:0,effects:[]}; ["weapon","armor","acc"].forEach(s=>{const it=findItem(m.equip[s]); if(it){b.atk+=it.atk||0;b.def+=it.def||0;b.hp+=it.hp||0;b.spd+=it.spd||0; if(it.effect)b.effects.push(it.effect);}}); return b; }
-    function totalStats(m){ const base=calcStats(m.speciesId,m.level), eb=equipBonus(m), p=m.plus||{atk:0,def:0,hp:0,mp:0}; return { atk:base.atk+eb.atk+p.atk, def:base.def+eb.def+p.def, maxHp:base.maxHp+eb.hp+p.hp, maxMp:base.maxMp+p.mp, spd:base.spd+eb.spd, effects:eb.effects }; }
+    function totalStats(m){ const base=calcStats(m.speciesId,m.level), eb=equipBonus(m), p=m.plus||{atk:0,def:0,hp:0,mp:0}, ap=avatarPas(); return { atk:Math.round((base.atk+eb.atk+p.atk)*(1+(ap.atk||0))), def:Math.round((base.def+eb.def+p.def)*(1+(ap.def||0))), maxHp:base.maxHp+eb.hp+p.hp, maxMp:base.maxMp+p.mp, spd:Math.round((base.spd+eb.spd)*(1+(ap.spd||0))), effects:eb.effects }; }
     function makeAlly(m){ const t=totalStats(m), s=SPECIES[m.speciesId]; return { uid:m.uid, speciesId:m.speciesId, name:s.name, face:s.face, level:m.level, maxHp:t.maxHp, hp:t.maxHp, maxMp:t.maxMp, mp:t.maxMp, atk:t.atk, def:t.def, spd:t.spd, defending:false, guardUp:false, status:{}, effects:t.effects, skills:(m.skills||[]).slice() }; }
     function makeEnemy(s,lv){ const st=calcStats(s,lv), sp=SPECIES[s]; return { speciesId:s, name:sp.name, label:"", level:lv, maxHp:st.maxHp, hp:st.maxHp, atk:st.atk, def:st.def, spd:st.spd, defending:false, guardUp:false, status:{}, effects:[], wildId:null, isBoss:false, bossFace:null }; }
 
@@ -628,7 +650,7 @@
     function newMember(s,lv){ lv=lv||1; return { uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; }
     function defaultSave(){ const box=[newMember("slime"),newMember("bat"),newMember("bones")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -783,7 +805,7 @@
       results.forEach(r=>{ const c=document.createElement("div"); c.className="gacha-card r-"+r.rarity; let face="🎁",name="";
         if(r.type==="gold"){ face="💰"; name=`ゴールド +${r.gold}G`; }
         else if(r.type==="consum"){ face="🧪"; name=`${CONSUM[r.cid].name} ×${r.n}`; }
-        else if(r.type==="avatar"){ face="🧑"; name=`アバター「${AVATARS[r.avatar].name}」を 入手！（限定）`; }
+        else if(r.type==="avatar"){ face=`<img src="${AVATARS[r.avatar].img}" style="width:36px;height:36px;object-fit:contain;image-rendering:pixelated;">`; name=`アバター「${AVATARS[r.avatar].name}」を 入手！（限定）`; }
         else if(r.type==="monster"){ face=faceHTML(r.speciesId,1.6); name=`${SPECIES[r.speciesId].name}${r.refunded?"（まきば満員→💎10返却）":` Lv${r.lvl}`}（ガチャ限定）`; }
         else if(r.type==="book"){ face=`<span style="font-size:1.5rem;">${r.item.icon}</span>`; name=`${r.item.name}（限定スキル）`; }
         else { face=`<span style="font-size:1.5rem;">${r.item.icon}</span>`; name=`${r.item.name}（${SLOT_LABEL[r.item.slot]}・限定）${r.item.effect?` ／ ${effLabel(r.item.effect)}`:""}`; }
@@ -844,7 +866,7 @@
         keys.forEach(k=>{ const it=CONSUM[k]; const c=document.createElement("div"); c.className="inv-item"; c.innerHTML=`<div class="iname">${it.name} <span class="mp">×${cs[k]}</span><div class="sub" style="text-align:left;margin:2px 0 0;">${it.desc}</div></div>`; body.appendChild(c); });
       } else {
         let av=`<div class="sub" style="margin-top:8px;">アバター（みためを えらぶ）</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">`;
-        (save.avatars||["hero"]).forEach(k=>{ av+=`<button class="small-btn ${save.avatar===k?"":"ghost"}" data-avatar="${k}">${AVATARS[k].name}${save.avatar===k?"◀":""}</button>`; });
+        (save.avatars||["hero"]).forEach(k=>{ const a=AVATARS[k]; if(!a)return; const ps=a.pas?Object.entries(a.pas).map(([x,v])=>({exp:"経験",gold:"金",atk:"攻",def:"守",spd:"速",heal:"回"}[x]+"+"+Math.round(v*100)+"%")).join(" "):""; av+=`<button class="small-btn ${save.avatar===k?"":"ghost"}" data-avatar="${k}" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;"><img src="${a.img}" style="width:38px;height:38px;object-fit:contain;image-rendering:pixelated;"><span style="font-size:0.66rem;">${a.name}${save.avatar===k?"◀":""}</span><span style="font-size:0.56rem;color:#9fe0b0;">${ps}</span></button>`; });
         av+=`</div>`;
         const maxF=Math.max(save.floor||1,(save.bestDepth||0)+1);
         const fl=`<div class="sub" style="margin-top:8px;">層を移動（到達済みのみ）</div><div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:4px;"><button class="small-btn ghost" data-floor="down">◀ 下の層</button><span style="min-width:120px;text-align:center">${floorInfo(save.floor||1).name}</span><button class="small-btn ghost" data-floor="up">上の層 ▶</button></div><div class="sub" style="margin-top:2px;">（最上 ${maxF}層まで）</div>`;
@@ -1037,44 +1059,45 @@
       const town=world.area==="town";
       wctx.fillStyle=town?"#3a7a3a":"#15121f"; wctx.fillRect(0,0,cw,ch);
       const x0=Math.floor(camx/TS), y0=Math.floor(camy/TS);
-      for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town); } }
+      for(let ty=y0; ty<=y0+VIEW; ty++){ for(let tx=x0; tx<=x0+VIEW; tx++){ if(ty<0||tx<0||ty>=world.H||tx>=world.W)continue; const c=world.grid[ty][tx]; const sx=tx*TS-camx, sy=ty*TS-camy; drawTile(c,sx,sy,town,tx,ty); } }
       // プレイヤー
       const psx=world.px-camx, psy=world.py-camy;
       const av=AVATARS[save.avatar]||AVATARS.hero;
-      wctx.fillStyle="#1a1426"; wctx.beginPath(); wctx.ellipse(psx,psy+10,9,4,0,0,7); wctx.fill();
-      wctx.fillStyle=av.c; wctx.beginPath(); wctx.arc(psx,psy,9,0,7); wctx.fill();
-      wctx.fillStyle="#f0d8b0"; wctx.beginPath(); wctx.arc(psx,psy-3,5,0,7); wctx.fill();
-      wctx.fillStyle="#3a2a40";
-      if(av.hat==="helm"){ wctx.fillRect(psx-6,psy-8,12,4); }
-      else if(av.hat==="hat"){ wctx.beginPath(); wctx.moveTo(psx-7,psy-6); wctx.lineTo(psx,psy-15); wctx.lineTo(psx+7,psy-6); wctx.closePath(); wctx.fill(); }
-      else if(av.hat==="band"){ wctx.fillRect(psx-6,psy-5,12,3); }
-      else if(av.hat==="crown"){ wctx.fillStyle="#ffd24a"; wctx.fillRect(psx-6,psy-9,12,4); }
+      wctx.fillStyle="rgba(10,8,18,0.35)"; wctx.beginPath(); wctx.ellipse(psx,psy+13,11,4,0,0,7); wctx.fill();
+      const aim=getImg(av.img);
+      if(aim){ const w=34,h=34; wctx.imageSmoothingEnabled=false; wctx.drawImage(aim, psx-w/2, psy-h+8, w, h); }
+      else { // 画像読み込み前のフォールバック
+        wctx.fillStyle=av.c; wctx.beginPath(); wctx.arc(psx,psy,9,0,7); wctx.fill();
+        wctx.fillStyle="#f0d8b0"; wctx.beginPath(); wctx.arc(psx,psy-3,5,0,7); wctx.fill();
+      }
     }
-    function drawTile(c,sx,sy,town){
-      const base= town?"#46934a":"#241c30"; wctx.fillStyle=base; wctx.fillRect(sx,sy,TS,TS);
-      // 地面の質感（簡易ノイズ）
-      if(town){ wctx.fillStyle="#3f8443"; const o=((sx*7+sy*13)%TS); wctx.fillRect(sx+(o%TS),sy+((o*3)%TS),3,3); wctx.fillRect(sx+((o*5)%(TS-3)),sy+((o*2)%(TS-3)),2,2); }
+    function drawTile(c,sx,sy,town,tx,ty){
+      const h=(((tx||0)*73856093)^((ty||0)*19349663))>>>0; const rb=(n)=>((h>>(n*4))&15);
+      // 地面ベース（草/床）を全タイルの下地に
+      if(town){ wctx.fillStyle="#5aa84e"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#54a047"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,2); wctx.fillStyle="#66b659"; wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); }
+      else { wctx.fillStyle="#2b2440"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#322b48"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); }
       const im=getImg(TILE_IMG[c]); if(im){ wctx.drawImage(im,sx,sy,TS,TS); return; }
-      const rect=(col)=>{wctx.fillStyle=col;wctx.fillRect(sx+2,sy+2,TS-4,TS-4);};
-      const house=(roof,label)=>{ wctx.fillStyle="#caa36a"; wctx.fillRect(sx+5,sy+12,TS-10,TS-14); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+2,sy+14); wctx.lineTo(sx+TS/2,sy+2); wctx.lineTo(sx+TS-2,sy+14); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(sx+TS/2-3,sy+18,6,8); wctx.fillStyle="#fff"; wctx.font="9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,sx+TS/2,sy+TS-1); };
-      const arch=(col,label)=>{ wctx.fillStyle="#2a2030"; wctx.fillRect(sx+4,sy+4,TS-8,TS-6); wctx.fillStyle=col; wctx.fillRect(sx+8,sy+8,TS-16,TS-10); wctx.fillStyle="#fff"; wctx.font="11px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,sx+TS/2,sy+TS-3); };
+      const cxv=sx+TS/2;
+      const blob=(x,y,r,col)=>{ wctx.fillStyle=col; wctx.beginPath(); wctx.arc(x,y,r,0,7); wctx.fill(); };
+      const house=(wall,roof,label)=>{ wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.fillRect(sx+5,sy+TS-6,TS-10,5); wctx.fillStyle=wall; wctx.fillRect(sx+5,sy+13,TS-10,TS-15); wctx.fillStyle=roof; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(sx+TS-1,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="rgba(255,255,255,0.18)"; wctx.beginPath(); wctx.moveTo(sx+1,sy+15); wctx.lineTo(cxv,sy+1); wctx.lineTo(cxv,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#3a2a16"; wctx.fillRect(cxv-3,sy+19,6,9); wctx.fillStyle="#bfe0ff"; wctx.fillRect(sx+7,sy+16,4,4); wctx.fillRect(sx+TS-11,sy+16,4,4); wctx.fillStyle="#fff"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-1); };
+      const arch=(col,label)=>{ wctx.fillStyle="#241b30"; wctx.fillRect(sx+3,sy+4,TS-6,TS-6); wctx.fillStyle=col; wctx.fillRect(sx+6,sy+7,TS-12,TS-9); wctx.fillStyle="rgba(0,0,0,0.4)"; wctx.fillRect(sx+TS/2-4,sy+11,8,TS-13); wctx.fillStyle="#fff"; wctx.font="bold 11px sans-serif"; wctx.textAlign="center"; wctx.fillText(label,cxv,sy+TS-3); };
       switch(c){
-        case "t": wctx.fillStyle="#6b4a25"; wctx.fillRect(sx+TS/2-2,sy+TS-10,4,9); wctx.fillStyle="#256b27"; wctx.beginPath(); wctx.arc(sx+TS/2,sy+TS/2-2,12,0,7); wctx.fill(); wctx.fillStyle="#3a8a3c"; wctx.beginPath(); wctx.arc(sx+TS/2-3,sy+TS/2-5,6,0,7); wctx.fill(); break;
-        case "p": rect("#b3a079"); wctx.strokeStyle="#00000022"; wctx.strokeRect(sx+3,sy+3,TS-6,TS-6); wctx.fillStyle="#9a8b6a"; wctx.fillRect(sx+6,sy+6,3,3); wctx.fillRect(sx+TS-10,sy+TS-11,3,3); break;
-        case "g": rect("#46934a"); wctx.strokeStyle="#3f8443"; wctx.beginPath(); wctx.moveTo(sx+8,sy+TS-8); wctx.lineTo(sx+8,sy+TS-13); wctx.moveTo(sx+TS-9,sy+TS-7); wctx.lineTo(sx+TS-9,sy+TS-12); wctx.stroke(); break;
-        case "o": rect("#8a8f99"); wctx.fillStyle="#5aa0d8"; wctx.beginPath(); wctx.arc(sx+TS/2,sy+TS/2,7,0,7); wctx.fill(); wctx.fillStyle="#bfe0ff"; wctx.beginPath(); wctx.arc(sx+TS/2-2,sy+TS/2-2,2,0,7); wctx.fill(); break;
-        case "w": rect("#3b78c4"); wctx.strokeStyle="#7fb4e8"; wctx.beginPath(); wctx.moveTo(sx+5,sy+11); wctx.quadraticCurveTo(sx+TS/2,sy+8,sx+TS-5,sy+11); wctx.moveTo(sx+5,sy+20); wctx.quadraticCurveTo(sx+TS/2,sy+17,sx+TS-5,sy+20); wctx.stroke(); break;
-        case "#": rect(town?"#6a6270":"#3a3350"); break;
-        case "r": rect("#5a5466"); break;
-        case ".": rect("#2e2740"); break;
-        case "I": house("#c45","宿"); break;
-        case "S": house("#a63","武"); break;
-        case "F": house("#86c","配"); break;
-        case "G": house("#3aa","ガ"); break;
-        case "D": arch("#caa","塔"); break;
+        case "t": { wctx.fillStyle="rgba(0,0,0,0.18)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-4,11,4,0,0,7); wctx.fill(); wctx.fillStyle="#6b4a25"; wctx.fillRect(cxv-2,sy+TS-12,4,11); blob(cxv,sy+TS/2,12,"#1f6b2a"); blob(cxv-7,sy+TS/2+2,8,"#1f6b2a"); blob(cxv+7,sy+TS/2+2,8,"#1f6b2a"); blob(cxv-2,sy+TS/2-3,9,"#2f8a38"); blob(cxv-5,sy+TS/2-5,4,"#4caa50"); break; }
+        case "p": { wctx.fillStyle="#d9c489"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#cab777"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),3,3); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); wctx.strokeStyle="rgba(150,120,70,0.35)"; wctx.strokeRect(sx+0.5,sy+0.5,TS-1,TS-1); break; }
+        case "g": { wctx.strokeStyle="#3f8a42"; wctx.lineWidth=1; const gx=sx+2+(rb(4)%(TS-6)), gy=sy+TS-6-(rb(5)%6); wctx.beginPath(); wctx.moveTo(gx,gy); wctx.lineTo(gx,gy-5); wctx.moveTo(gx+3,gy); wctx.lineTo(gx+3,gy-4); wctx.stroke(); if(rb(6)>11)blob(sx+6+(rb(7)%18),sy+8+(rb(2)%14),2,"#e8e070"); break; }
+        case "o": { blob(cxv,sy+TS/2,11,"#8a8f99"); blob(cxv,sy+TS/2,8,"#5aa0d8"); blob(cxv-2,sy+TS/2-2,3,"#cfeaff"); break; }
+        case "w": { wctx.fillStyle="#2f6fbe"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3b80d0"; wctx.fillRect(sx,sy+(rb(0)%TS),TS,2); wctx.strokeStyle="#7fb8ec"; wctx.lineWidth=1; wctx.beginPath(); wctx.moveTo(sx+4,sy+10); wctx.quadraticCurveTo(cxv,sy+7,sx+TS-4,sy+10); wctx.moveTo(sx+4,sy+19); wctx.quadraticCurveTo(cxv,sy+16,sx+TS-4,sy+19); wctx.moveTo(sx+4,sy+27); wctx.quadraticCurveTo(cxv,sy+24,sx+TS-4,sy+27); wctx.stroke(); break; }
+        case "#": { wctx.fillStyle=town?"#7a7080":"#403858"; wctx.fillRect(sx+1,sy+1,TS-2,TS-2); wctx.fillStyle="rgba(255,255,255,0.1)"; wctx.fillRect(sx+1,sy+1,TS-2,3); wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.fillRect(sx+1,sy+TS-4,TS-2,3); break; }
+        case "r": { blob(cxv,sy+TS/2,12,"#6a6478"); blob(cxv-3,sy+TS/2-3,6,"#807a90"); wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.arc(cxv+3,sy+TS/2+3,7,0,7); wctx.fill(); break; }
+        case ".": { wctx.fillStyle="#37304e"; wctx.fillRect(sx+2,sy+2,TS-4,TS-4); wctx.strokeStyle="#2a2440"; wctx.strokeRect(sx+2.5,sy+2.5,TS-5,TS-5); break; }
+        case "I": house("#e6d2a8","#c0504d","宿"); break;
+        case "S": house("#e6d2a8","#b07a3a","武"); break;
+        case "F": house("#e6d2a8","#8a5ec0","配"); break;
+        case "G": house("#e6d2a8","#3aa0a0","ガ"); break;
+        case "D": arch("#c9a86a","塔"); break;
         case "B": arch("#c33","！"); break;
         case "X": arch("#39c","X"); break;
-        case "N": case "V": { const col=c==="N"?"#6ac0e0":"#d0a060"; wctx.fillStyle="#1a1426"; wctx.beginPath(); wctx.ellipse(sx+TS/2,sy+TS-7,7,3,0,0,7); wctx.fill(); wctx.fillStyle=col; wctx.beginPath(); wctx.arc(sx+TS/2,sy+TS/2,7,0,7); wctx.fill(); wctx.fillStyle="#f0d8b0"; wctx.beginPath(); wctx.arc(sx+TS/2,sy+TS/2-3,4,0,7); wctx.fill(); wctx.fillStyle="#fff"; wctx.font="9px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",sx+TS/2,sy+8); break; }
+        case "N": case "V": { const col=c==="N"?"#6ac0e0":"#d0a060"; wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-6,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,col); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffe24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",cxv,sy+9); break; }
       }
     }
     // 入力（スティック＋キー）
@@ -1255,11 +1278,11 @@
       me.skills.forEach(id=>{ const sk=SKILLS[id]; if(!sk)return; const b=document.createElement("button"); b.className="list-btn"; b.disabled=(me.mp<sk.mp); b.dataset.skill=id; b.innerHTML=`${sk.icon} ${sk.name} <span class="mp">(MP ${sk.mp})</span><div class="d">${sk.desc}</div>`; el.skillList.appendChild(b); });
       el.commands.classList.add("hidden"); el.skillPanel.classList.remove("hidden"); }
     async function useSkill(id){ if(busy||awaiting)return; const me=curActor(); const sk=SKILLS[id]; if(me.mp<sk.mp)return; el.skillPanel.classList.add("hidden");
-      if(sk.type==="heal"){ const ti=await pickTarget("ally"); if(ti==null){ openSkill(); return; } busy=true; me.mp-=sk.mp; const tgt=run.allies[ti]; const heal=Math.round(tgt.maxHp*sk.healRatio); tgt.hp=Math.min(tgt.maxHp,tgt.hp+heal); shakeAlly(ti); flashAlly(ti,"heal"); SFX.heal&&SFX.heal(); renderBattle(); log(`${me.name}は ${sk.icon}${sk.name}！ <span class="heal">${tgt.name}の HPが ${heal} かいふく！</span>`); await wait(800); afterAct(); return; }
+      if(sk.type==="heal"){ const ti=await pickTarget("ally"); if(ti==null){ openSkill(); return; } busy=true; me.mp-=sk.mp; const tgt=run.allies[ti]; const heal=Math.round(tgt.maxHp*sk.healRatio*(1+(avatarPas().heal||0))); tgt.hp=Math.min(tgt.maxHp,tgt.hp+heal); shakeAlly(ti); flashAlly(ti,"heal"); SFX.heal&&SFX.heal(); renderBattle(); log(`${me.name}は ${sk.icon}${sk.name}！ <span class="heal">${tgt.name}の HPが ${heal} かいふく！</span>`); await wait(800); afterAct(); return; }
       if(sk.type==="buff"){ busy=true; me.mp-=sk.mp; me.guardUp=true; renderBattle(); log(`${me.name}は ${sk.icon}${sk.name}！ <span class="buff">ぼうぎょが あがった！</span>`); await wait(750); afterAct(); return; }
       if(sk.type==="revive"){ const downed=run.allies.map((a,i)=>a.hp<=0?i:-1).filter(i=>i>=0); if(downed.length===0){ openSkill(); return; } busy=true; me.mp-=sk.mp; const ti=downed[0],tgt=run.allies[ti]; tgt.hp=Math.ceil(tgt.maxHp*0.5); shakeAlly(ti); flashAlly(ti,"heal"); SFX.heal&&SFX.heal(); renderBattle(); log(`${me.name}の ${sk.icon}${sk.name}！ <span class="heal">${tgt.name}が 復活！</span>`); await wait(850); afterAct(); return; }
       if(sk.type==="magicAll"){ busy=true; me.mp-=sk.mp; let txt=""; run.enemies.forEach((tgt)=>{ if(tgt.hp<=0)return; const i=run.enemies.indexOf(tgt); const r=resolveDamage(me,tgt,{kind:"mag",power:sk.power,flat:sk.flat}); tgt.hp-=r.dmg; shakeEnemy(i); flashEnemy(i,"mag"); txt+=`${enLabel(tgt)} ${r.dmg} ／ `; }); SFX.crit&&SFX.crit(); renderBattle(); log(`${me.name}の ${sk.icon}<span class="magic">${sk.name}</span>！ てき全体に！<br>${txt}`); await wait(950); if(allEnemiesDead()){ await onBattleWon(); return; } afterAct(); return; }
-      if(sk.type==="healAll"){ busy=true; me.mp-=sk.mp; run.allies.forEach((tgt,i)=>{ if(tgt.hp<=0)return; const h=Math.round(tgt.maxHp*sk.healRatio); tgt.hp=Math.min(tgt.maxHp,tgt.hp+h); flashAlly(i,"heal"); }); SFX.heal&&SFX.heal(); renderBattle(); log(`${me.name}の ${sk.icon}<span class="heal">${sk.name}</span>！ なかま全体を かいふく！`); await wait(850); afterAct(); return; }
+      if(sk.type==="healAll"){ busy=true; me.mp-=sk.mp; const _hb=1+(avatarPas().heal||0); run.allies.forEach((tgt,i)=>{ if(tgt.hp<=0)return; const h=Math.round(tgt.maxHp*sk.healRatio*_hb); tgt.hp=Math.min(tgt.maxHp,tgt.hp+h); flashAlly(i,"heal"); }); SFX.heal&&SFX.heal(); renderBattle(); log(`${me.name}の ${sk.icon}<span class="heal">${sk.name}</span>！ なかま全体を かいふく！`); await wait(850); afterAct(); return; }
       if(sk.type==="status"){
         if(sk.status==="atkUp"){ const ti=await pickTarget("ally"); if(ti==null){ openSkill(); return; } busy=true; me.mp-=sk.mp; const tgt=run.allies[ti]; (tgt.status||(tgt.status={})).atkUp=true; flashAlly(ti,"crit"); renderBattle(); log(`${me.name}の ${sk.icon}${sk.name}！ <span class="buff">${tgt.name}の こうげきが あがった！</span>`); await wait(800); afterAct(); return; }
         const ti=await pickTarget("enemy"); if(ti==null){ openSkill(); return; } busy=true; me.mp-=sk.mp; const tgt=run.enemies[ti]; const ss=tgt.status||(tgt.status={});
@@ -1281,6 +1304,7 @@
       SFX.win&&SFX.win();
       const boss=run.context==="boss"; let exp=0,gold=0; const drops=[],recruits=[];
       run.enemies.forEach(e=>{ exp+=(e.level*5+4)*(e.isBoss?2:1); gold+=(e.level*4+6)*(e.isBoss?3:1); const d=rollDrop(run.floor,e.isBoss); if(d)drops.push(d); if(e.wildId&&!e.isBoss&&Math.random()<0.06){ if(save.box.length+recruits.length<MAX_BOX){ const rm=newMember(e.wildId,e.level); recruits.push(rm); markSeen(rm.speciesId); } } if(e.isBoss&&DROP_MON.length&&Math.random()<0.12){ if(save.box.length+recruits.length<MAX_BOX){ const dm=newMember(DROP_MON[Math.floor(Math.random()*DROP_MON.length)],e.level); recruits.push(dm); markSeen(dm.speciesId); } } });
+      const _ap=avatarPas(); exp=Math.round(exp*(1+(_ap.exp||0))); gold=Math.round(gold*(1+(_ap.gold||0))); // アバター パッシブ
       let gemGain = Math.random()<0.12 ? (1+Math.floor(Math.random()*2)) : 0; // ジェムは たまに少し
       const ups=[];
       run.allies.forEach(al=>{ const m=findMember(al.uid); if(!m)return; const before=m.level; m.exp+=exp; while(m.exp>=expToNext(m.level)){m.exp-=expToNext(m.level);m.level+=1;} if(m.level>before){ ups.push(`${SPECIES[m.speciesId].name} Lv${m.level}`); refreshAlly(al,m);} });
