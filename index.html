@@ -1217,7 +1217,7 @@
     }
     function npcGuideStory(){ const f=world.floor; const p=questProg(f);
       if(!p.accepted){ p.accepted=true; persist(); showToast("📜 依頼を 受注した！  "+questText(f)); return [ {n:"受付",t:"ようこそ。この層の 依頼（試練）を つたえるね。"} ].concat(questBrief(f)).concat([ {n:"受付",t:"終わったら ここに 報告に きてね。武運を！" } ]); }
-      if(questDone(f) && !p.reported){ p.reported=true; persist(); SFX.fanfare&&SFX.fanfare(); showToast("✅ 依頼 達成を 報告！"); const pat=bossPattern(f); const HINTS={ report:"ダンジョン奥の 扉が ひらいた。まっすぐ 主のもとへ 行ける。", key:"主の 部屋は 施錠されてる。ダンジョンの 宝箱に『鍵』が あるはず。", twokeys:"主の 部屋は 二重に 施錠…。『鍵』が 2本 いる。宝箱を ふたつ さがして。", lever:"奥に ある『レバー』を 引けば 道が ひらくよ。", twinlever:"レバーが 2つ あるみたい。両方 引かないと 開かないよ。", trilever:"レバーが 3つ も…！ 全部 引いて 道を ひらこう。", guardian:"奥に『守護者』が いる。倒せば 道が ひらく。", fragments:"扉を 開く『破片』が 宝箱に 分かれてる。全部 集めよう。", riddle:"扉の 前に『石碑の なぞかけ』が。解けば ひらく。", toll:"門番が いる。『通行料』を 払えば 通してくれる。" }; const hint=HINTS[pat]||HINTS.report; return questDoneStory(f).concat([ {n:"受付",t:`よくぞ 試練を 果たした、${save.heroName||"テイマー"}！`}, {n:"受付",t:hint}, {n:"受付",t:"その先の“層の主”を たおせば、上の層へ。気を つけて！" } ]); }
+      if(questDone(f) && !p.reported){ p.reported=true; persist(); SFX.fanfare&&SFX.fanfare(); showToast("✅ 依頼 達成を 報告！"); const pat=bossPattern(f); const HINTS={ report:"ダンジョン奥の 扉が ひらいた。まっすぐ 主のもとへ 行ける。", key:"主の 部屋は 施錠されてる。ダンジョンの 宝箱に『鍵』が あるはず。", twokeys:"主の 部屋は 二重に 施錠…。『鍵』が 2本 いる。宝箱を ふたつ さがして。", lever:"奥に ある『レバー』を 引けば 道が ひらくよ。", twinlever:"レバーが 2つ あるみたい。両方 引かないと 開かないよ。", trilever:"レバーが 3つ も…！ 全部 引いて 道を ひらこう。", guardian:"奥に『守護者』が いる。倒せば 道が ひらく。", fragments:"扉を 開く『破片』が 宝箱に 分かれてる。全部 集めよう。", riddle:"扉の 前に『石碑の なぞかけ』が。解けば ひらく。", toll:"門番が いる。『通行料』を 払えば 通してくれる。", torch:"奥への 道は 暗い。『灯火』を すべて ともせば 道が 浮かぶ。", bridge:"谷に かかる 橋が こわれてる。宝箱の『木材』を 集めて かけ直そう。", seal:"主の 部屋は『封印』されてる。封印を まもる 獣を 倒せば 解ける。" }; const hint=HINTS[pat]||HINTS.report; return questDoneStory(f).concat([ {n:"受付",t:`よくぞ 試練を 果たした、${save.heroName||"テイマー"}！`}, {n:"受付",t:hint}, {n:"受付",t:"その先の“層の主”を たおせば、上の層へ。気を つけて！" } ]); }
       const qline=p.reported?"報告は すんでる。ダンジョン奥の 層ボスに 挑めるよ！":(questDone(f)?"依頼 達成！ わたしに『報告』して くれれば 道が ひらくよ。":("依頼の のこり → "+questText(f))); return [ {n:"受付",t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できるよ。"}, {n:"受付",t:qline}, {n:"受付",t:"宿屋に 入れば HP・MP 全回復。むりせず もどっておいで。"} ]; }
     function npcVillagerStory(f){ const fi=floorInfo(f); const pool=[ `${fi.town}も 物騒に なった…。魔物が 増えてな。`, `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `この街の 子が ダンジョンに 入ったきりでね…無事だと いいが。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば 全回復。むりは しなさんな。`, `早く 外の 世界に 帰りたい。…あんたなら、やれるかもな。`, `受付で 依頼を 受けてから ダンジョンへ 行くんだぞ。` ]; return [ {n:"村人",t:pool[f%pool.length]}, {n:"村人",t:pool[(f*3+2)%pool.length]} ]; }
     function travelerTalk(){ const f=world.floor;
@@ -1288,7 +1288,7 @@
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function seededRng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
-    const BOSS_PATTERNS=["report","key","twokeys","lever","twinlever","trilever","guardian","fragments","riddle","toll"];
+    const BOSS_PATTERNS=["report","key","twokeys","lever","twinlever","trilever","guardian","fragments","riddle","toll","torch","bridge","seal"];
     function bossPattern(f){ return BOSS_PATTERNS[(f-1)%BOSS_PATTERNS.length]; } // 報告/鍵/2つの鍵/レバー/2連/3連/守護者/破片集め/謎かけ/通行料（連続しない循環）
     function roomEntrance(g,r){ for(let y=r.y;y<r.y+r.h;y++){ if(g[y]&&g[y][r.x-1]===".")return[r.x-1,y]; if(g[y]&&g[y][r.x+r.w]===".")return[r.x+r.w,y]; } for(let x=r.x;x<r.x+r.w;x++){ if(g[r.y-1]&&g[r.y-1][x]===".")return[x,r.y-1]; if(g[r.y+r.h]&&g[r.y+r.h][x]===".")return[x,r.y+r.h]; } return null; }
     function buildDungeon(floor){
@@ -1314,15 +1314,16 @@
       const usedMid={};
       const placeIn=(ch)=>{ for(let tries=0;tries<25;tries++){ const r=pick(mids); const c=cen(r); const k=c.x+","+c.y; if(g[c.y]&&g[c.y][c.x]==="."&&!usedMid[k]){ g[c.y][c.x]=ch; usedMid[k]=1; return true; } } return false; };
       if(mids.length){
-        let nC=2; if(pat==="twokeys"||pat==="fragments")nC=3; for(let i=0;i<nC;i++)placeIn("C");
+        let nC=2; if(pat==="twokeys"||pat==="fragments"||pat==="bridge")nC=3; for(let i=0;i<nC;i++)placeIn("C");
         if(pat==="lever")placeIn("W"); else if(pat==="twinlever"){placeIn("W");placeIn("W");} else if(pat==="trilever"){placeIn("W");placeIn("W");placeIn("W");}
-        else if(pat==="guardian")placeIn("Z"); else if(pat==="riddle")placeIn("Q"); else if(pat==="toll")placeIn("Y");
+        else if(pat==="guardian"||pat==="seal")placeIn("Z"); else if(pat==="riddle")placeIn("Q"); else if(pat==="toll")placeIn("Y");
+        else if(pat==="torch"){placeIn("H");placeIn("H");} // 灯火2つ
       }
       if(floorHasRescue(floor)&&mids.length){ const rc=cen(pick(mids)); if(g[rc.y][rc.x]===".")g[rc.y][rc.x]="M"; }
       // 岩（部屋の内側だけ＝通路を塞がない）
       const nrock=3+Math.floor(rnd()*5); for(let k=0;k<nrock;k++){ const rr=pick(R); const x=rr.x+Math.floor(rnd()*rr.w), y=rr.y+Math.floor(rnd()*rr.h); let ok=g[y][x]==="."; for(let dy=-1;dy<=1&&ok;dy++)for(let dx=-1;dx<=1;dx++){ if(!(g[y+dy]&&g[y+dy][x+dx]===".")){ok=false;break;} } if(ok)g[y][x]="r"; } // 8近傍すべて床＝完全内部だけ（割断点を避ける）
       // 開封済み(宝箱/扉/救出)は復活させない
-      const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x],k=x+","+y; if(c==="C"&&st.chest&&st.chest[k])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if(c==="W"&&st.leverpos&&st.leverpos[k])g[y][x]="."; else if(c==="Z"&&st.guardian)g[y][x]="."; else if(c==="Q"&&st.riddle)g[y][x]="."; else if(c==="Y"&&st.toll)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
+      const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x],k=x+","+y; if(c==="C"&&st.chest&&st.chest[k])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if((c==="W"||c==="H")&&st.leverpos&&st.leverpos[k])g[y][x]="."; else if(c==="Z"&&st.guardian)g[y][x]="."; else if(c==="Q"&&st.riddle)g[y][x]="."; else if(c==="Y"&&st.toll)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
       return {grid:g,W,H,spawn:cen(r0)};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
@@ -1360,8 +1361,8 @@
       }
       // インタラクト判定：通り抜け系(門/塔/出口)は乗ったタイル、固い建物/人は「隣接」で反応
       const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const here=tileChar(tx,ty);
-      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす", P:"はなす", E:"しらべる", L:"とびらを あける", M:"たすける", W:"レバーを ひく", Q:"なぞを とく", Y:"通行料を はらう" };
-      const WALK_ON=new Set(["B","X","E","M","W","Q","Y"]); const ADJACENT=new Set(["I","S","F","G","N","V","D","T","P","L"]);
+      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす", P:"はなす", E:"しらべる", L:"とびらを あける", M:"たすける", W:"レバーを ひく", Q:"なぞを とく", Y:"通行料を はらう", H:"灯火を ともす" };
+      const WALK_ON=new Set(["B","X","E","M","W","Q","Y","H"]); const ADJACENT=new Set(["I","S","F","G","N","V","D","T","P","L"]);
       let tc=null;
       if(WALK_ON.has(here)) tc=here;
       else for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){ const cc=tileChar(tx+dx,ty+dy); if(ADJACENT.has(cc)){ tc=cc; break; } }
@@ -1391,7 +1392,7 @@
       else if(c==="E"){ triggerFieldEvent(world.floor); }
       else if(c==="L"){ openLockedDoor(); }
       else if(c==="M"){ rescueEvent(); }
-      else if(c==="W"){ const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); pullLever(tx,ty); }
+      else if(c==="W"||c==="H"){ const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); pullLever(tx,ty); }
       else if(c==="Z"){ const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); if(confirm("守護者が 道を ふさいでいる！ たたかいますか？")) startGuardian(tx,ty); }
       else if(c==="Q"){ const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); riddleEvent(tx,ty); }
       else if(c==="Y"){ const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); tollEvent(tx,ty); }
@@ -1497,6 +1498,7 @@
         case "B": arch("#c33","！"); break;
         case "N": case "V": case "P": { const col=c==="N"?"#6ac0e0":(c==="V"?"#d0a060":"#e090b0"); wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-6,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,col); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffe24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",cxv,sy+9); break; }
         case "E": { const t2=(((tx*3+ty*5))%6); wctx.fillStyle="#ffe24a"; wctx.font="bold 16px sans-serif"; wctx.textAlign="center"; wctx.fillText("✦",cxv,sy+TS/2+6); wctx.fillStyle="rgba(255,226,74,0.25)"; wctx.beginPath(); wctx.arc(cxv,sy+TS/2,8+t2,0,7); wctx.fill(); break; }
+        case "H": { wctx.fillStyle="#5a4a3a"; wctx.fillRect(cxv-2,sy+TS-12,4,11); wctx.fillStyle="#3a3030"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-12,5,3,0,0,7); wctx.fill(); const fl=((tx*5+ty*3)%3); wctx.fillStyle="#ff8a2a"; wctx.beginPath(); wctx.moveTo(cxv,sy+4-fl); wctx.quadraticCurveTo(cxv+5,sy+TS/2-2,cxv,sy+TS-13); wctx.quadraticCurveTo(cxv-5,sy+TS/2-2,cxv,sy+4-fl); wctx.fill(); wctx.fillStyle="#ffe24a"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS/2,2,4,0,0,7); wctx.fill(); break; } // 灯火
         case "Q": { wctx.fillStyle="#7a7286"; wctx.fillRect(cxv-6,sy+6,12,TS-8); wctx.fillStyle="#9a92a8"; wctx.fillRect(cxv-5,sy+7,10,TS-10); wctx.fillStyle="#ffe24a"; wctx.font="bold 13px sans-serif"; wctx.textAlign="center"; wctx.fillText("？",cxv,sy+TS/2+5); break; } // なぞかけ石碑
         case "Y": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,"#b08040"); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffd24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("💰",cxv,sy+9); break; } // 門番
         case "Z": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,8,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2,8,"#8a8f99"); blob(cxv,sy+TS/2-4,4,"#b0b6c0"); wctx.fillStyle="#caa86a"; wctx.fillRect(cxv-7,sy+TS/2-2,4,9); wctx.fillStyle="#ff5a5a"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText("守",cxv,sy+8); break; } // 守護者
@@ -1755,7 +1757,7 @@
       let msg;
       const pat=bossPattern(world.floor);
       if((pat==="key"||pat==="twokeys") && world.keys<world.keyNeed){ world.keys=(world.keys||0)+1; world.keyFloor=world.floor; const rem=world.keyNeed-world.keys; msg=`🔑 鍵 を 手に入れた！（この層専用${world.keyNeed>1?` ／ あと ${rem}本`:""}）`; }
-      else if(pat==="fragments"){ let it; if(Math.random()<0.4){ it=rollEnchant(world.floor); } else { it=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); } save.inventory.push(it); msg=`🧩 破片 と ${it.icon}${it.name} を 手に入れた！`; if(!gridHas("C")){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; dstateFor(world.floor).door=1; msg+="\n🧩 すべての 破片が そろい、奥の扉が 開いた！"; } }
+      else if(pat==="fragments"||pat==="bridge"){ const isB=pat==="bridge"; let it; if(Math.random()<0.4){ it=rollEnchant(world.floor); } else { it=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); } save.inventory.push(it); msg=`${isB?"🪵 木材":"🧩 破片"} と ${it.icon}${it.name} を 手に入れた！`; if(!gridHas("C")){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; dstateFor(world.floor).door=1; msg+=isB?"\n🪵 木材が そろい、橋が かかった！ 奥へ いける！":"\n🧩 すべての 破片が そろい、奥の扉が 開いた！"; } }
       else { let it; if(Math.random()<0.4){ it=rollEnchant(world.floor); } else { it=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); } save.inventory.push(it); msg=`${it.icon}${it.name} を 手に入れた！`; }
       persist(); SFX.buy&&SFX.buy(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); alert(`📦 宝箱！ ${msg}`); }
     const CAPTIVE={ 4:{n:"ミラ",t:["…たすけて くれて ありがとう。あなたの 魔物さん、つよいね。","お母さんの ところへ 帰れる…！ この恩は 忘れません。"]}, 9:{n:"猟師の仲間",t:["うう…吹雪で 動けなかった…。助かった、恩に着る。","『凍らぬ炎』、きみが 持っていけ。きっと 役に立つ。"]} };
@@ -1764,9 +1766,9 @@
       for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="M")world.grid[y][x]=".";
       const gem=2+Math.floor(f/3); save.gems=(save.gems||0)+gem; addRescue(f); dstateFor(f).resc=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden");
       runDialogue([{n:"ナビ",t:"檻に 誰か 囚われてる…！ 助けよう！"}].concat(lines).concat([{n:"ナビ",t:`救出 成功！（💎+${gem}）`}])); }
-    function pullLever(tx,ty){ world.grid[ty][tx]="."; const ds=dstateFor(world.floor); ds.leverpos=ds.leverpos||{}; ds.leverpos[tx+","+ty]=1; actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy();
-      if(gridHas("W")){ persist(); runDialogue([{n:"ナビ",t:"カチッ…！ でも まだ 開かない。レバーは もう ひとつ あるみたい。"}]); }
-      else { for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); showToast("🎚️ 奥の扉が 開いた！"); runDialogue([{n:"ナビ",t:"ゴゴゴ…！ 奥の 扉が 開いた！ 主のもとへ いこう。"}]); } }
+    function pullLever(tx,ty){ const was=world.grid[ty][tx]; const torch=(was==="H"); world.grid[ty][tx]="."; const ds=dstateFor(world.floor); ds.leverpos=ds.leverpos||{}; ds.leverpos[tx+","+ty]=1; actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy();
+      if(gridHas("W")||gridHas("H")){ persist(); runDialogue([{n:"ナビ",t:torch?"灯火が ともった…！ でも まだ。もう ひとつ あるみたい。":"カチッ…！ でも まだ 開かない。レバーは もう ひとつ あるみたい。"}]); }
+      else { for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); showToast(torch?"🔥 灯火が すべて ともった！":"🎚️ 奥の扉が 開いた！"); runDialogue([{n:"ナビ",t:"ゴゴゴ…！ 奥の 扉が 開いた！ 主のもとへ いこう。"}]); } }
     function startGuardian(tx,ty){ world.guardianPos={x:tx,y:ty}; startEncounter(false,true); }
     function makeGuest(){ try{ const ps=world.party||[]; const avg=ps.length?Math.round(ps.reduce((s,a)=>s+a.level,0)/ps.length):10; const tm=newMember("navi_a2",Math.max(8,avg+1)); const a=makeAlly(tm); a.uid="guest_kai"; a.name="カイの相棒"; a.guest=true; return a; }catch(e){ return null; } }
     async function guestAct(u){ if(u.hp<=0){ run.turnIdx++; nextTurn(); return; } const targets=run.enemies.filter(e=>e.hp>0); if(!targets.length){ run.turnIdx++; nextTurn(); return; } const tgt=targets[Math.floor(Math.random()*targets.length)]; const ti=run.enemies.indexOf(tgt); const r=resolveDamage(u,tgt,{kind:"phys",power:1.1}); tgt.hp-=r.dmg; shakeEnemy(ti); flashEnemy(ti,r.crit?"crit":"phys"); (r.crit?SFX.crit:SFX.hit)&&(r.crit?SFX.crit():SFX.hit()); renderBattle(); log(`<span class="scout">🤝 ${u.name}の こうげき！</span> ${enLabel(tgt)}に ${r.dmg}！`); await wait(720); if(allEnemiesDead()){ await onBattleWon(); return; } run.turnIdx++; nextTurn(); }
