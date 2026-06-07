@@ -1147,7 +1147,7 @@
       22:[ {n:"ナビ",t:"第22層《樹海の街》。巨木が 天を つく。生命の 気配が 濃い。"}, {n:"カイ",t:"…なあ。外に 帰ったら、お前は 何を する？ おれは…まだ 決めてねえや。"} ],
       26:[ {n:"ナビ",t:"第26層《影の街》。光が とどかない。心が 重く なる…。"}, {n:"ナビ",t:"でも きみには 魔物たちが いる。その 絆が、影を 払う 光に なるよ。"} ],
     });
-    function floorStory(f){ return STORY_FLOOR[f] || [ {n:"ナビ",t:`第${f}層 ${floorInfo(f).town}に たどりついた。ここまで よく来たね。`}, {n:"ナビ",t:"まだ 上は ある。いこう。"} ]; }
+    function floorStory(f){ if(STORY_FLOOR[f])return STORY_FLOOR[f]; const info=floorInfo(f); const hooks=[ `風の 匂いが 変わった…。ここは 別の 世界みたいだね。`, `見て、${info.field}が 広がってる。きれいだけど…どこか 張りつめてる。`, `この街にも 塔の 異変が 及んでるみたい。困ってる 人が いそう。`, `ここまで ${f}層…。きみと 魔物たちの 絆が、確かに 強く なってる。`, `空気が 重い…。この層の“主”も、相当 手強そうだ。` ]; return [ {n:"ナビ",t:`第${f}層《${info.town}》に たどりついた。`}, {n:"ナビ",t:hooks[f%hooks.length]}, {n:"ナビ",t:`まずは 街の 人の 話を 聞いてみよう。きっと きみの 力を 必要としてる。`} ]; }
     /* ===== クエスト：各層の物語仕立ての“試練”を こなすと 層ボスに 挑める ===== */
     function questsForFloor(f){ const huntN=3+Math.floor(f/3), cN=1+(f%2);
       if(f===1) return [{type:"hunt",n:3}];   // 試験＝討伐のみ
@@ -1195,13 +1195,17 @@
     });
     function genLore(f){ const town=floorInfo(f).town; const foes=["凶暴な魔物","さまよう亡霊","群れる魔獣","狂乱の幻獣"]; const items=["失われた遺物","封印の鍵片","古びた護符","聖なる結晶"]; const giver=["街の衛兵","老いた賢者","旅の商人","祠の巫女"]; const i=f%foes.length,j=(f+1)%items.length,g=(f+2)%giver.length; return { hunt:foes[i], coll:items[j], brief:[ {n:giver[g],t:`${town}にも 塔の 異変が…。${foes[i]}が 増え、人々は おびえている。`}, {n:giver[g],t:`どうか ${foes[i]}を しずめ、『${items[j]}』を 集めて ほしい。それが 上へ 進む 鍵に なる。`} ], done:[ {n:giver[g],t:`見事…！『${items[j]}』の 力で ボスへの 道が ひらいた。武運を。`} ] }; }
     function loreFor(f){ return QUEST_LORE[f]||genLore(f); }
+    function questGiver(f){ const L=loreFor(f); const sp=(L.brief||[]).map(b=>b.n).filter(n=>n&&n!=="ナビ"&&n!=="???"); return sp.length?sp[sp.length-1]:"受付"; } // 物語から依頼主を特定
+    // 受注時に依頼主から渡される“支度の品”（層帯ごとに変化）
+    function questGiftItem(f){ const band=Math.ceil(f/6); const id=["potion","ether","hipotion","hipotion","elixir"][Math.min(band-1,4)]||"potion"; return id; }
+    const BOSS_HINTS={ report:"ダンジョン奥の 扉が ひらいた。まっすぐ 主のもとへ 行ける。", key:"主の 部屋は 施錠されてる。ダンジョンの 宝箱に『鍵』が あるはず。", twokeys:"主の 部屋は 二重に 施錠…。『鍵』が 2本 いる。宝箱を ふたつ さがして。", lever:"奥に ある『レバー』を 引けば 道が ひらくよ。", twinlever:"レバーが 2つ あるみたい。両方 引かないと 開かないよ。", trilever:"レバーが 3つ も…！ 全部 引いて 道を ひらこう。", guardian:"奥に『守護者』が いる。倒せば 道が ひらく。", fragments:"扉を 開く『破片』が 宝箱に 分かれてる。全部 集めよう。", riddle:"扉の 前に『石碑の なぞかけ』が。解けば ひらく。", toll:"門番が いる。『通行料』を 払えば 通してくれる。", torch:"奥への 道は 暗い。『灯火』を すべて ともせば 道が 浮かぶ。", bridge:"谷に かかる 橋が こわれてる。宝箱の『木材』を 集めて かけ直そう。", seal:"主の 部屋は『封印』されてる。封印を まもる 獣を 倒せば 解ける。" };
     function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0,r:0}; if(save.quest[f].r===undefined)save.quest[f].r=0; return save.quest[f]; }
     function questDone(f){ const p=questProg(f); return questsForFloor(f).every(q=> q.type==="hunt"?p.h>=q.n:(q.type==="collect"?p.c>=q.n:p.r>=q.n)); }
     function questText(f){ const p=questProg(f),L=loreFor(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️魔物 ${Math.min(p.h,q.n)}/${q.n}`:(q.type==="collect"?`📦${L.coll} ${Math.min(p.c,q.n)}/${q.n}`:`🆘救出 ${Math.min(p.r,q.n)}/${q.n}`)).join("　"); }
-    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f); const obj=qs.map(q=> q.type==="hunt"?`・この層に 出る 魔物を ${q.n}体 たおす`:(q.type==="collect"?`・ダンジョンの 宝箱から 『${L.coll}』を ${q.n}個 あつめる`:`・ダンジョンに 囚われた 者を 助け出す`)).join("\n"); return L.brief.concat([ {n:"受付",t:"【クエスト】\n"+obj}, {n:"受付",t:"達成すると ダンジョン奥の 層ボスへの 扉が ひらくよ。"} ]); }
+    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f),g=questGiver(f); const obj=qs.map(q=> q.type==="hunt"?`・この層に 出る 魔物を ${q.n}体 たおす`:(q.type==="collect"?`・『${L.coll}』を ${q.n}個 あつめる（ダンジョンの 宝箱）`:`・ダンジョンに 囚われた 者を 助け出す`)).join("\n"); return L.brief.concat([ {n:g,t:"【依頼】\n"+obj}, {n:g,t:"達成すると ダンジョン奥の“層の主”への 扉が ひらく。終わったら 報告に きてくれ。"} ]); }
     function questDoneStory(f){ return (loreFor(f).done||[{n:"ナビ",t:"試練 達成！ 層ボスに 挑めるよ。"}]); }
     function afterQuest(f,wasDone){ if(!wasDone && questDone(f)){ showToast("✨ クエスト達成！ 層ボスに 挑める！"); SFX.fanfare&&SFX.fanfare(); } else { showToast("クエスト  "+questText(f)); } }
-    function addHunt(f,n){ const p=questProg(f); if(!p.accepted){ showToast("街の 受付で 依頼を 受けてから 挑もう"); return; } if(questDone(f))return; const was=questDone(f); p.h+=(n||1); persist(); afterQuest(f,was); }
+    function addHunt(f,n){ const p=questProg(f); if(!p.accepted){ showToast(`街の『${questGiver(f)}』から 依頼を 受けてから`); return; } if(questDone(f))return; const was=questDone(f); p.h+=(n||1); persist(); afterQuest(f,was); }
     function addCollect(f){ const p=questProg(f); if(!p.accepted)return; const was=questDone(f); p.c+=1; persist(); afterQuest(f,was); }
     function addRescue(f){ const p=questProg(f); const was=questDone(f); p.r+=1; persist(); if(p.accepted)afterQuest(f,was); }
     let toastTimer=null;
@@ -1215,11 +1219,18 @@
       const base=[ {n:"ナビ",t:`第${f}層の 層ボスを たおした……！ さすが、わたしの ${save.heroName||"テイマー"}！`}, {n:"ナビ",t:"上の層への 扉が ひらいたよ。HPも MPも 全回復。次の 街で 仕切り直そう。"} ];
       return milestone?milestone.concat(base):base;
     }
-    function npcGuideStory(){ const f=world.floor; const p=questProg(f);
-      if(!p.accepted){ p.accepted=true; persist(); showToast("📜 依頼を 受注した！  "+questText(f)); return [ {n:"受付",t:"ようこそ。この層の 依頼（試練）を つたえるね。"} ].concat(questBrief(f)).concat([ {n:"受付",t:"終わったら ここに 報告に きてね。武運を！" } ]); }
-      if(questDone(f) && !p.reported){ p.reported=true; persist(); SFX.fanfare&&SFX.fanfare(); showToast("✅ 依頼 達成を 報告！"); const pat=bossPattern(f); const HINTS={ report:"ダンジョン奥の 扉が ひらいた。まっすぐ 主のもとへ 行ける。", key:"主の 部屋は 施錠されてる。ダンジョンの 宝箱に『鍵』が あるはず。", twokeys:"主の 部屋は 二重に 施錠…。『鍵』が 2本 いる。宝箱を ふたつ さがして。", lever:"奥に ある『レバー』を 引けば 道が ひらくよ。", twinlever:"レバーが 2つ あるみたい。両方 引かないと 開かないよ。", trilever:"レバーが 3つ も…！ 全部 引いて 道を ひらこう。", guardian:"奥に『守護者』が いる。倒せば 道が ひらく。", fragments:"扉を 開く『破片』が 宝箱に 分かれてる。全部 集めよう。", riddle:"扉の 前に『石碑の なぞかけ』が。解けば ひらく。", toll:"門番が いる。『通行料』を 払えば 通してくれる。", torch:"奥への 道は 暗い。『灯火』を すべて ともせば 道が 浮かぶ。", bridge:"谷に かかる 橋が こわれてる。宝箱の『木材』を 集めて かけ直そう。", seal:"主の 部屋は『封印』されてる。封印を まもる 獣を 倒せば 解ける。" }; const hint=HINTS[pat]||HINTS.report; return questDoneStory(f).concat([ {n:"受付",t:`よくぞ 試練を 果たした、${save.heroName||"テイマー"}！`}, {n:"受付",t:hint}, {n:"受付",t:"その先の“層の主”を たおせば、上の層へ。気を つけて！" } ]); }
-      const qline=p.reported?"報告は すんでる。ダンジョン奥の 層ボスに 挑めるよ！":(questDone(f)?"依頼 達成！ わたしに『報告』して くれれば 道が ひらくよ。":("依頼の のこり → "+questText(f))); return [ {n:"受付",t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できるよ。"}, {n:"受付",t:qline}, {n:"受付",t:"宿屋に 入れば HP・MP 全回復。むりせず もどっておいで。"} ]; }
-    function npcVillagerStory(f){ const fi=floorInfo(f); const pool=[ `${fi.town}も 物騒に なった…。魔物が 増えてな。`, `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `この街の 子が ダンジョンに 入ったきりでね…無事だと いいが。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば 全回復。むりは しなさんな。`, `早く 外の 世界に 帰りたい。…あんたなら、やれるかもな。`, `受付で 依頼を 受けてから ダンジョンへ 行くんだぞ。` ]; return [ {n:"村人",t:pool[f%pool.length]}, {n:"村人",t:pool[(f*3+2)%pool.length]} ]; }
+    function npcGuideStory(){ const f=world.floor; const p=questProg(f); const g=questGiver(f); const L=loreFor(f);
+      // —— 受注：依頼主の事情を聞く → 支度の品を 受け取る ——
+      if(!p.accepted){ p.accepted=true; const gid=questGiftItem(f); const gname=CONSUM[gid]?CONSUM[gid].name:"やくそう"; const n2=(f<=6?2:1); save.consumables[gid]=(save.consumables[gid]||0)+n2; persist(); showToast(`📜 依頼 受注！ ${gname}×${n2} を 受け取った`);
+        return questBrief(f).concat([ {n:g,t:`これを 持っていけ。『${gname}』を ${n2}つ。せめてもの 支度だ。`}, {n:g,t:"きみと 魔物たちの 武運を 祈る。終わったら 必ず 報告に きてくれ。"} ]); }
+      // —— 報告：集めた物を 納める → 依頼主が 礼の品を 授ける ——
+      if(questDone(f) && !p.reported){ p.reported=true; const pat=bossPattern(f); const hasCollect=questsForFloor(f).some(q=>q.type==="collect"); const hasResc=questsForFloor(f).some(q=>q.type==="rescue");
+        const reward=rollEnchant(f); save.inventory.push(reward); const gem=4+Math.floor(f/2); save.gems=(save.gems||0)+gem; persist(); SFX.fanfare&&SFX.fanfare(); showToast(`✅ 報告 完了！ ${reward.icon}${reward.name} と 💎+${gem}`);
+        const handover = hasCollect? {n:g,t:`おお…！『${L.coll}』を これだけ。確かに 受け取った。ずっと これが 欲しかったんだ。`} : (hasResc? {n:g,t:"無事に 助け出してくれたか…！ なんと 礼を 言えば いいか。"} : {n:g,t:"見事に やり遂げたな。きみたちの 絆、しかと 見せてもらった。"});
+        return [handover].concat(questDoneStory(f)).concat([ {n:g,t:`これは ほんの 礼だ。受け取って くれ。（${reward.icon}${reward.name} ／ 💎+${gem}）`}, {n:g,t:BOSS_HINTS[pat]||BOSS_HINTS.report}, {n:g,t:`その先の“層の主”を 倒せば、上の層へ 続く。気を つけて、${save.heroName||"テイマー"}。`} ]); }
+      // —— 受注後/報告後の 案内 ——
+      const qline=p.reported?"報告は すんでる。ダンジョン奥の 層ボスに 挑めるよ！":(questDone(f)?"依頼 達成だな！ わたしに『報告』して くれれば 道が ひらく。":("依頼の のこり → "+questText(f))); return [ {n:g,t:qline}, {n:g,t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できる。"}, {n:g,t:"宿屋に 入れば HP・MP 全回復。むりは しないで もどっておいで。"} ]; }
+    function npcVillagerStory(f){ const fi=floorInfo(f); const pool=[ `${fi.town}も 物騒に なった…。魔物が 増えてな。`, `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `この街の 子が ダンジョンに 入ったきりでね…無事だと いいが。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば 全回復。むりは しなさんな。`, `早く 外の 世界に 帰りたい。…あんたなら、やれるかもな。`, `困りごとが ある人に 話しかけて、依頼を 受けてから ダンジョンへ 行くと いい。` ]; return [ {n:"村人",t:pool[f%pool.length]}, {n:"村人",t:pool[(f*3+2)%pool.length]} ]; }
     function travelerTalk(){ const f=world.floor;
       if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
       if(f>=2){ if(confirm(`旅人「下の 第${f-1}層の 街へ、この手紙を 届けてほしいんだ。引き受けてくれるかい？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast("📨 おつかいを 引き受けた（第"+(f-1)+"層の街へ）"); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層の 街で 渡してくれ。お礼は たっぷり 用意してるよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
@@ -1244,7 +1255,7 @@
       // イベント消化＝マスを通常床に
       if(world&&world.grid){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="E")world.grid[y][x]="g"; }
     }
-    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor).concat([{n:"ナビ",t:"まずは この街の 受付（案内人）に 話しかけて、依頼（試練）を 受けよう。"}])); }
+    function maybeFloorStory(){ if(!save.introSeen)return; if(!world||world.area!=="town")return; const key="f"+world.floor; if(!save.storySeen)save.storySeen={}; if(save.storySeen[key])return; save.storySeen[key]=true; persist(); runDialogue(floorStory(world.floor).concat([{n:"ナビ",t:`まずは この街の『${questGiver(world.floor)}』に 話しかけて、依頼を 受けよう。困っている 誰かが いるはず。`}])); }
     let stickVec={x:0,y:0}, keyVec={x:0,y:0}, actionCtx=null, actionTargetC=null;
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
@@ -1384,7 +1395,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:"街の 受付で 話を 聞いて、依頼を 受けてから 挑もう。"} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:"街の 受付に もどって『報告』しよう。そうすれば 道が ひらくはず！" } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
+      else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に 話を 聞いて、依頼を 受けてから 挑もう。`} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に もどって『報告』しよう。道が ひらくはず！` } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ if(save.delivery && save.delivery.to===world.floor){ completeDelivery(); } else runDialogue(npcVillagerStory(world.floor)); }
