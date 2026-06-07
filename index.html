@@ -1224,7 +1224,7 @@
       if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
       if(f>=2){ if(confirm(`旅人「下の 第${f-1}層の 街へ、この手紙を 届けてほしいんだ。引き受けてくれるかい？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast("📨 おつかいを 引き受けた（第"+(f-1)+"層の街へ）"); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層の 街で 渡してくれ。お礼は たっぷり 用意してるよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
       runDialogue(npcTravelerStory(f)); }
-    function checkDelivery(floor){ if(save.delivery && save.delivery.to===floor){ const gem=6+floor, gold=80+floor*10; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; save.delivery=null; persist(); setTimeout(()=>runDialogue([ {n:"街の人",t:"おや、上の層からの 届け物かい？ わざわざ ありがとうね。"}, {n:"街の人",t:`これは お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ]),350); return true; } return false; }
+    function completeDelivery(){ const floor=world.floor; const gem=6+floor, gold=80+floor*10; const from=save.delivery.from; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; save.delivery=null; persist(); showToast("📨 配達 完了！"); runDialogue([ {n:"村人",t:`おや、第${from}層からの 届け物かい？ わざわざ ありがとうね。`}, {n:"村人",t:`これは お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ]); }
     function npcTravelerStory(f){ const lines=[ [{n:"旅人",t:"おれも テイマーさ。……でも もう ここで 足踏みして 長くてね。"},{n:"旅人",t:"ガチャ堂の 噂、聞いたか？ ごく稀に 伝説級の 相棒が 来るらしいぜ。"}], [{n:"旅人",t:"配合は 奥が 深い。同じ系統・属性を 重ねると、化けることが ある。"},{n:"旅人",t:"色々 試してみな。思わぬ 一体が 生まれるぜ。"}], [{n:"旅人",t:"フィールドで 光る 場所を 見かけたら、調べてみな。"},{n:"旅人",t:"ちょっとした“出来事”が あるかもしれん。"}] ]; return lines[f%lines.length]; }
     function triggerFieldEvent(f){ if(!save.fieldEvent)save.fieldEvent={}; const key="f"+f;
       if(save.fieldEvent[key]){ runDialogue([{n:"ナビ",t:"…もう ここには 何も なさそう。"}]); return; }
@@ -1283,27 +1283,35 @@
       return {grid:g,W,H,spawn:{x:6,y:H-5}};
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
+    function seededRng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+    function roomEntrance(g,r){ for(let y=r.y;y<r.y+r.h;y++){ if(g[y]&&g[y][r.x-1]===".")return[r.x-1,y]; if(g[y]&&g[y][r.x+r.w]===".")return[r.x+r.w,y]; } for(let x=r.x;x<r.x+r.w;x++){ if(g[r.y-1]&&g[r.y-1][x]===".")return[x,r.y-1]; if(g[r.y+r.h]&&g[r.y+r.h][x]===".")return[x,r.y+r.h]; } return null; }
     function buildDungeon(floor){
-      // 広い迷宮（画面を数回スクロール）。部屋を通路で連結＝入口→…→ボス。宝箱あり
-      const W=32,H=24; const g=Array.from({length:H},()=>Array(W).fill("#"));
-      const room=(x,y,w,h)=>{ for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++) if(g[j]&&g[j][i]!==undefined)g[j][i]="."; };
+      // 層ごとに 構成が変わる迷宮（シード生成）。チェーン連結＝必ず到達可能。ボス部屋は層により施錠(L=鍵で開く)
+      const rnd=seededRng(floor*97+13);
+      const cols=3+Math.floor(rnd()*2), rows=3, cellW=7+Math.floor(rnd()*2), cellH=6;
+      const W=cols*cellW+2, H=rows*cellH+2; const g=Array.from({length:H},()=>Array(W).fill("#"));
+      const room=(r)=>{ for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++) if(g[j]&&g[j][i]!==undefined)g[j][i]="."; };
       const hc=(a,b,y)=>{ for(let i=Math.min(a,b);i<=Math.max(a,b);i++) if(g[y]&&g[y][i]!==undefined)g[y][i]="."; };
       const vc=(a,b,x)=>{ for(let j=Math.min(a,b);j<=Math.max(a,b);j++) if(g[j]&&g[j][x]!==undefined)g[j][x]="."; };
-      const R=[ {x:2,y:19,w:5,h:4}, {x:2,y:11,w:5,h:4}, {x:9,y:12,w:6,h:4}, {x:9,y:3,w:5,h:4}, {x:17,y:4,w:6,h:4}, {x:25,y:3,w:5,h:5}, {x:24,y:12,w:6,h:5}, {x:16,y:15,w:6,h:5}, {x:25,y:19,w:5,h:4} ];
-      R.forEach(r=>room(r.x,r.y,r.w,r.h));
       const cen=r=>({x:r.x+(r.w>>1), y:r.y+(r.h>>1)});
-      const link=(a,b)=>{ const A=cen(R[a]),B=cen(R[b]); hc(A.x,B.x,A.y); vc(A.y,B.y,B.x); };
-      [[0,1],[1,2],[2,3],[3,4],[4,5],[2,7],[7,6],[6,5],[7,8],[6,8]].forEach(([a,b])=>link(a,b));
-      [[11,13],[19,5],[27,5],[18,17],[26,13],[12,20],[20,15]].forEach(([x,y])=>{ if(g[y]&&g[y][x]===".")g[y][x]="r"; });
-      const cb=cen(R[5]); g[cb.y][cb.x]="B";               // 層ボス（最奥）
-      const r0=R[0]; g[r0.y+1][r0.x+1]="X";                 // 出口（入口の部屋・端）
-      [R[8],R[3]].forEach(r=>{ const c=cen(r); if(g[c.y][c.x]===".")g[c.y][c.x]="C"; }); // 通常宝箱（うち1つで鍵）
-      // 宝物庫（施錠扉Lの先・鍵が必要）
-      room(8,18,4,3); vc(12,18,10); g[15][10]="L"; g[19][9]="C";
-      if(floorHasRescue(floor)){ const rc=cen(R[7]); if(g[rc.y]&&g[rc.y][rc.x]===".")g[rc.y][rc.x]="M"; } // 救出対象
-      // 既に開けた宝箱/扉/救出済みは復活させない（保存状態を反映）
+      const R=[];
+      for(let cy=0;cy<rows;cy++){ const xs=[]; for(let cx=0;cx<cols;cx++)xs.push(cx); if(cy%2===1)xs.reverse();
+        for(const cx of xs){ const rw=4+Math.floor(rnd()*Math.min(3,cellW-4)), rh=3+Math.floor(rnd()*Math.min(2,cellH-3));
+          let ox=cx*cellW+1+Math.floor(rnd()*Math.max(1,cellW-rw)); let oy=cy*cellH+1+Math.floor(rnd()*Math.max(1,cellH-rh));
+          const r={x:Math.min(ox,W-rw-1),y:Math.min(oy,H-rh-1),w:rw,h:rh}; room(r); R.push(r); } }
+      for(let i=1;i<R.length;i++){ const A=cen(R[i-1]),B=cen(R[i]); hc(A.x,B.x,A.y); vc(A.y,B.y,B.x); } // チェーン連結（木＝全室到達可）
+      const r0=R[0], rl=R[R.length-1]; const c0=cen(r0), cl=cen(rl);
+      g[c0.y][c0.x]="X"; g[cl.y][cl.x]="B";
+      const mids=R.slice(1,R.length-1); const pick=a=>a[Math.floor(rnd()*a.length)];
+      const keyGate = (floor%2===0); // 偶数層＝ボス部屋を施錠（鍵が必要）／奇数層＝施錠なし（報告のみ）＝パターン交互
+      if(keyGate){ const e=roomEntrance(g,rl); if(e)g[e[1]][e[0]]="L"; }
+      if(mids.length){ const a=cen(pick(mids)); if(g[a.y][a.x]===".")g[a.y][a.x]="C"; const b=cen(pick(mids)); if(g[b.y][b.x]===".")g[b.y][b.x]="C"; if(keyGate){ const c2=cen(pick(mids)); if(g[c2.y][c2.x]===".")g[c2.y][c2.x]="C"; } }
+      if(floorHasRescue(floor)&&mids.length){ const rc=cen(pick(mids)); if(g[rc.y][rc.x]===".")g[rc.y][rc.x]="M"; }
+      // 岩（部屋の内側だけ＝通路を塞がない）
+      const nrock=3+Math.floor(rnd()*5); for(let k=0;k<nrock;k++){ const rr=pick(R); const x=rr.x+Math.floor(rnd()*rr.w), y=rr.y+Math.floor(rnd()*rr.h); let ok=g[y][x]==="."; for(let dy=-1;dy<=1&&ok;dy++)for(let dx=-1;dx<=1;dx++){ if(!(g[y+dy]&&g[y+dy][x+dx]===".")){ok=false;break;} } if(ok)g[y][x]="r"; } // 8近傍すべて床＝完全内部だけ（割断点を避ける）
+      // 開封済み(宝箱/扉/救出)は復活させない
       const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x]; if(c==="C"&&st.chest&&st.chest[x+","+y])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
-      return {grid:g,W,H,spawn:cen(R[0])};
+      return {grid:g,W,H,spawn:cen(r0)};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
     function healFull(a){ a.hp=a.maxHp; a.mp=a.maxMp; }
@@ -1317,7 +1325,7 @@
       if(area==="town"){ syncParty(); world.party.forEach(healFull); }
       else if(!world.party||world.party.length===0){ syncParty(); world.party.forEach(healFull); }
       busy=false; showWorld();
-      if(area==="town"){ if(!checkDelivery(floor)) maybeFloorStory(); }
+      if(area==="town"){ maybeFloorStory(); if(save.delivery && save.delivery.to===floor) showToast("📨 配達先の街！ 村人に 話して 届けよう"); }
     }
     async function floorWarp(n){ save.floor=n; persist(); const t=document.getElementById("battle-trans"); if(t){ t.classList.remove("hidden","bt-out"); void t.offsetWidth; t.classList.add("bt-in"); await wait(420); } enterArea("town",n); if(t){ t.classList.remove("bt-in","bt-out"); t.classList.add("hidden"); }
     }
@@ -1366,7 +1374,7 @@
       else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:"街の 受付で 話を 聞いて、依頼を 受けてから 挑もう。"} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:"街の 受付に もどって『報告』しよう。そうすれば 道が ひらくはず！" } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
-      else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
+      else if(c==="V"){ if(save.delivery && save.delivery.to===world.floor){ completeDelivery(); } else runDialogue(npcVillagerStory(world.floor)); }
       else if(c==="P"){ travelerTalk(); }
       else if(c==="E"){ triggerFieldEvent(world.floor); }
       else if(c==="L"){ openLockedDoor(); }
