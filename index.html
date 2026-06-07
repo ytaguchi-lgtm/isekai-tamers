@@ -366,7 +366,10 @@
     // 戦闘中に画像が読み込まれたら再描画（最初:手描き→読込後:画像 の切替を防ぐ補助）
     function onAssetLoad(){ try{ if(run && el && el.enemyList && !document.getElementById("screen-dungeon").classList.contains("hidden")) renderBattle(); }catch(e){} }
     function preloadBattleImgs(units){ const paths=[...new Set((units||[]).map(u=>SKINS[u.speciesId]).filter(Boolean))]; paths.forEach(getImg); return new Promise(res=>{ if(!paths.length){res();return;} const t0=Date.now(); const iv=setInterval(()=>{ const ok=paths.every(p=>{const im=_imgCache[p];return im&&(im._ok||im._err);}); if(ok||Date.now()-t0>800){ clearInterval(iv); res(); } },40); }); }
-    function faceHTML(speciesId, sizeEm){ const s=SPECIES[speciesId]; const url=SKINS[speciesId]; const sz=sizeEm||1; return url ? `<img src="${url}" alt="${s.name}" style="width:${sz}em;height:${sz}em;object-fit:contain;">` : s.face; }
+    const _faceCache={};
+    function faceHTML(speciesId, sizeEm){ const s=SPECIES[speciesId]; const url=SKINS[speciesId]; const sz=sizeEm||1; if(url) return `<img src="${url}" alt="${s.name}" style="width:${sz}em;height:${sz}em;object-fit:contain;">`;
+      // 画像が無い種は 戦闘と同じ“手描きスプライト”を canvas で生成（図鑑/ステータスと戦闘のビジュアルを一致させる）
+      try{ let durl=_faceCache[speciesId]; if(!durl){ const cv=document.createElement("canvas"); cv.width=72; cv.height=72; drawMonster(cv.getContext("2d"),speciesId,72,false); durl=cv.toDataURL(); _faceCache[speciesId]=durl; } return `<img src="${durl}" alt="${s.name}" style="width:${sz}em;height:${sz}em;object-fit:contain;vertical-align:middle;">`; }catch(e){ return s.face; } }
 
     /* 種族 */
     const SPECIES = {
@@ -776,9 +779,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const box=[newMember("fairy")]; const s={ box, partyUids:box.map(m=>m.uid), inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:"fairy", fieldEvent:{}, heroName:"テイマー", delivery:null, dstate:{} }; s.inventory.push(makeItem("woodSword")); s.box.forEach(m=>s.seen[m.speciesId]=true); return s; }
+    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -856,7 +859,7 @@
       // 部位スロットを 添付のように 図の左右へ配置（タップでその部位を選ぶ）
       const sb=document.getElementById("equip-slots");
       const slotBox=(slot)=>{ const it=findItem(m.equip[slot]); const sel=equipFilter===slot;
-        return `<button class="slotbox ${sel?"sel":""} ${it?tierClass(it.tier):""}" data-slot="${slot}"><div class="sb-part">${SLOT_ICON[slot]} ${SLOT_LABEL[slot]}</div><div class="sb-item">${it?`${it.icon}<span class="sb-name">${it.name}</span>`:"＋ なし"}</div>${it&&it.effect?`<div class="sb-eff">${effLabel(it.effect)}</div>`:""}</button>`; };
+        return `<button class="slotbox ${sel?"sel":""} ${it?tierClass(it.tier):""}" data-slot="${slot}"><div class="sb-part">${SLOT_ICON[slot]} ${SLOT_LABEL[slot]}</div><div class="sb-item">${it?`${it.icon}<span class="sb-name">${it.name}</span>`:"＋ なし"}</div>${it?`<div class="sb-eff">${it.effect?effLabel(it.effect):[it.atk?`攻+${it.atk}`:"",it.def?`守+${it.def}`:"",it.hp?`HP+${it.hp}`:"",it.spd?`速+${it.spd}`:""].filter(Boolean).join(" ")}</div>`:""}</button>`; };
       const bookSel = equipFilter==="book";
       sb.innerHTML=`<div class="equip-stage">
         <div class="slot-col">${slotBox("weapon")}${slotBox("armor")}</div>
@@ -873,12 +876,12 @@
       if(items.length===0) ib.innerHTML+=`<div class="sub">この しゅるいの もちものは ない。ダンジョンや ガチャで てにいれよう。</div>`;
       items.forEach(it=>{ const r=document.createElement("div"); r.className="inv-item";
         if(it.kind==="equip"){ const here=m.equip[it.slot]===it.uid; const wearer=save.box.find(mem=>mem.uid!==m.uid && mem.equip[it.slot]===it.uid);
-          const st=[it.atk?`攻+${it.atk}`:"",it.def?`守+${it.def}`:"",it.hp?`HP+${it.hp}`:""].filter(Boolean).join(" ");
-          const note=here?"":(wearer?`<div class="worn">🧍 ${SPECIES[wearer.speciesId].face}${wearer.name} が そうび中</div>`:"");
+          const st=[it.atk?`攻+${it.atk}`:"",it.def?`守+${it.def}`:"",it.hp?`HP+${it.hp}`:"",it.spd?`速+${it.spd}`:"",it.mp?`MP+${it.mp}`:""].filter(Boolean).join(" ")||"効果は ステータス補正なし";
+          const note=here?"":(wearer?`<div class="worn">🧍 ${SPECIES[wearer.speciesId].face}${SPECIES[wearer.speciesId].name} が そうび中</div>`:"");
           const btn=here?`<button class="small-btn" disabled>そうび中</button>`:`<button class="small-btn" data-equipitem="${it.uid}">${wearer?"つけかえ":"そうび"}</button>`;
           r.innerHTML=`<div class="iname ${tierClass(it.tier)}">${it.icon} ${it.name}<div class="sub" style="text-align:left;margin:2px 0 0;">${st}${it.effect?` ／ <span class="item-effect">${effLabel(it.effect)}</span>`:""}</div>${note}</div><div class="btn-col">${btn}<button class="small-btn ghost" data-sell="${it.uid}">売 💎${sellValue(it)}</button></div>`;
         } else { const sk=SKILLS[it.teach]; const hereSet=m.book===it.uid; const wearer=save.box.find(mem=>mem.uid!==m.uid && mem.book===it.uid); const innate=(m.skills||[]).includes(it.teach);
-          const note=hereSet?"":(wearer?`<div class="worn">🧍 ${SPECIES[wearer.speciesId].face}${wearer.name} が セット中</div>`:(innate?`<div class="worn">この子は 元から 使える</div>`:""));
+          const note=hereSet?"":(wearer?`<div class="worn">🧍 ${SPECIES[wearer.speciesId].face}${SPECIES[wearer.speciesId].name} が セット中</div>`:(innate?`<div class="worn">この子は 元から 使える</div>`:""));
           const btn=hereSet?`<button class="small-btn" disabled>セット中</button>`:`<button class="small-btn" data-setbook="${it.uid}">${wearer?"つけかえ":"セット"}</button>`;
           r.innerHTML=`<div class="iname ${tierClass(it.tier)}">${it.icon} ${it.name}<div class="sub" style="text-align:left;margin:2px 0 0;">${sk?sk.icon+sk.name:""} ／ ${sk?sk.desc:""}（セット中だけ使える・消えない）</div>${note}</div><div class="btn-col">${btn}<button class="small-btn ghost" data-sell="${it.uid}">売 💎${sellValue(it)}</button></div>`; }
         ib.appendChild(r); });
@@ -918,6 +921,7 @@
           list.appendChild(c); });
         return;
       }
+      if(!save.fuseUnlocked){ prev.innerHTML=tabs+`<div class="sub">🔒 配合は まだ 解禁されていません。<br>第5層に たどり着くと、ナビが『配合』の 力に めざめます。<br>（入れ替えタブは いつでも 使えます）</div>`; list.innerHTML=""; return; }
       let html=tabs;
       if(fuseSel.length===2){ const a=findMember(fuseSel[0]),b=findMember(fuseSel[1]),offId=combineSpecies(a.speciesId,b.speciesId),os=SPECIES[offId],sk=inheritSkills(a,b),p=inheritPlus(a,b);
         const known=!!(save.seen&&save.seen[offId]); const offFace=known?faceHTML(offId):`<span style="font-size:1.4rem;">❓</span>`; const offName=known?os.name:"？？？"; const offSk=known?(sk.map(id=>SKILLS[id].icon+SKILLS[id].name).join(" ・ ")||"なし"):"？？？";
@@ -933,11 +937,11 @@
         c.innerHTML=`<div class="top"><div class="face">${faceHTML(m.speciesId)}</div><div class="info"><div class="name">${s.name} <span class="lv">Lv ${m.level}</span>${sel?'<span class="badge fuse">えらび中</span>':""}${ok?"":'<span class="lv">（Lv'+FUSE_MIN_LV+'未満）</span>'}</div><div class="skill-line">✨ ${skillSummary(m)}</div>${plusSummary(m)?`<div class="plus-line">⭐ ${plusSummary(m)}</div>`:""}</div></div>`;
         list.appendChild(c); });
     }
-    function toggleFuse(uid){ const m=findMember(uid); if(!m)return; if(m.level<FUSE_MIN_LV){ alert(`配合できるのは Lv${FUSE_MIN_LV}以上の モンスターだけです（このこは Lv${m.level}）`); return; }
+    function toggleFuse(uid){ if(!save.fuseUnlocked){ alert("配合は 第5層に たどり着いてから 解禁されます。"); return; } const m=findMember(uid); if(!m)return; if(m.level<FUSE_MIN_LV){ alert(`配合できるのは Lv${FUSE_MIN_LV}以上の モンスターだけです（このこは Lv${m.level}）`); return; }
       // 1人目=親A。以降のタップは 2人目を即差し替え＝画面そのままでライブプレビュー
       if(fuseSel[0]===uid){ fuseSel=[]; } else if(fuseSel.length===0){ fuseSel=[uid]; } else { fuseSel=[fuseSel[0], uid]; }
       renderFuse(); }
-    function doFuse(){ const a=findMember(fuseSel[0]),b=findMember(fuseSel[1]); if(!a||!b)return; if(a.level<FUSE_MIN_LV||b.level<FUSE_MIN_LV){ alert(`両方とも Lv${FUSE_MIN_LV}以上 ひつようです`); return; } const offId=combineSpecies(a.speciesId,b.speciesId),sk=inheritSkills(a,b),p=inheritPlus(a,b);
+    function doFuse(){ if(!save.fuseUnlocked){ alert("配合は 第5層に たどり着いてから 解禁されます。"); return; } const a=findMember(fuseSel[0]),b=findMember(fuseSel[1]); if(!a||!b)return; if(a.level<FUSE_MIN_LV||b.level<FUSE_MIN_LV){ alert(`両方とも Lv${FUSE_MIN_LV}以上 ひつようです`); return; } const offId=combineSpecies(a.speciesId,b.speciesId),sk=inheritSkills(a,b),p=inheritPlus(a,b);
       if(!confirm(`${SPECIES[a.speciesId].name} と ${SPECIES[b.speciesId].name} を 配合して ${SPECIES[offId].name} を つくりますか？\n（親2体は きえます。装備は もちものに もどります）`))return;
       const off=newMember(offId,1); off.skills=sk; off.plus=p; const del=[a.uid,b.uid]; save.box=save.box.filter(m=>!del.includes(m.uid)); save.partyUids=save.partyUids.filter(u=>!del.includes(u)); save.box.push(off); markSeen(offId); fuseSel=[]; persist(); SFX.fanfare&&SFX.fanfare(); renderFuse(); alert(`${SPECIES[offId].name} が うまれた！`); }
 
@@ -1224,10 +1228,11 @@
       if(!p.accepted){ p.accepted=true; const gid=questGiftItem(f); const gname=CONSUM[gid]?CONSUM[gid].name:"やくそう"; const n2=(f<=6?2:1); save.consumables[gid]=(save.consumables[gid]||0)+n2; persist(); showToast(`📜 依頼 受注！ ${gname}×${n2} を 受け取った`);
         return questBrief(f).concat([ {n:g,t:`これを 持っていけ。『${gname}』を ${n2}つ。せめてもの 支度だ。`}, {n:g,t:"きみと 魔物たちの 武運を 祈る。終わったら 必ず 報告に きてくれ。"} ]); }
       // —— 報告：集めた物を 納める → 依頼主が 礼の品を 授ける ——
-      if(questDone(f) && !p.reported){ p.reported=true; const pat=bossPattern(f); const hasCollect=questsForFloor(f).some(q=>q.type==="collect"); const hasResc=questsForFloor(f).some(q=>q.type==="rescue");
+      if(questDone(f) && !p.reported){ p.reported=true; const hasCollect=questsForFloor(f).some(q=>q.type==="collect"); const hasResc=questsForFloor(f).some(q=>q.type==="rescue");
         const reward=rollEnchant(f); save.inventory.push(reward); const gem=4+Math.floor(f/2); save.gems=(save.gems||0)+gem; persist(); SFX.fanfare&&SFX.fanfare(); showToast(`✅ 報告 完了！ ${reward.icon}${reward.name} と 💎+${gem}`);
         const handover = hasCollect? {n:g,t:`おお…！『${L.coll}』を これだけ。確かに 受け取った。ずっと これが 欲しかったんだ。`} : (hasResc? {n:g,t:"無事に 助け出してくれたか…！ なんと 礼を 言えば いいか。"} : {n:g,t:"見事に やり遂げたな。きみたちの 絆、しかと 見せてもらった。"});
-        return [handover].concat(questDoneStory(f)).concat([ {n:g,t:`これは ほんの 礼だ。受け取って くれ。（${reward.icon}${reward.name} ／ 💎+${gem}）`}, {n:g,t:BOSS_HINTS[pat]||BOSS_HINTS.report}, {n:g,t:`その先の“層の主”を 倒せば、上の層へ 続く。気を つけて、${save.heroName||"テイマー"}。`} ]); }
+        const openLine = hasCollect? `集めた『${L.coll}』が ダンジョン奥の 扉の 封印を 解いた！ 道が ひらいたよ。` : (hasResc? "助け出した人が、奥への 隠し道を 教えてくれた。道が ひらいた！" : "試練を 越えた きみを、奥の 扉が 認めた。道が ひらいた！");
+        return [handover].concat(questDoneStory(f)).concat([ {n:g,t:`これは ほんの 礼だ。受け取って くれ。（${reward.icon}${reward.name} ／ 💎+${gem}）`}, {n:g,t:openLine}, {n:g,t:`その先の“層の主”を 倒せば、上の層へ 続く。気を つけて、${save.heroName||"テイマー"}。`} ]); }
       // —— 受注後/報告後の 案内 ——
       const qline=p.reported?"報告は すんでる。ダンジョン奥の 層ボスに 挑めるよ！":(questDone(f)?"依頼 達成だな！ わたしに『報告』して くれれば 道が ひらく。":("依頼の のこり → "+questText(f))); return [ {n:g,t:qline}, {n:g,t:"武器屋は ゴールド、ガチャ堂は ジェム、配合所では 出撃の 入れ替えも できる。"}, {n:g,t:"宿屋に 入れば HP・MP 全回復。むりは しないで もどっておいで。"} ]; }
     function npcVillagerStory(f){ const fi=floorInfo(f), L=loreFor(f), g=questGiver(f), p=questProg(f);
@@ -1242,9 +1247,9 @@
     }
     function travelerTalk(){ const f=world.floor;
       if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
-      if(f>=2){ if(confirm(`旅人「下の 第${f-1}層の 街へ、この手紙を 届けてほしいんだ。引き受けてくれるかい？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast("📨 おつかいを 引き受けた（第"+(f-1)+"層の街へ）"); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層の 街で 渡してくれ。お礼は たっぷり 用意してるよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
+      if(f>=2 && !(save.deliveryDone&&save.deliveryDone[f])){ if(confirm(`旅人「下の 第${f-1}層の 街へ、この手紙を 届けてほしいんだ。引き受けてくれるかい？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast("📨 おつかいを 引き受けた（第"+(f-1)+"層の街へ）"); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層の 街で 渡してくれ。お礼は たっぷり 用意してるよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
       runDialogue(npcTravelerStory(f)); }
-    function completeDelivery(){ const floor=world.floor; const gem=6+floor, gold=80+floor*10; const from=save.delivery.from; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; save.delivery=null; persist(); showToast("📨 配達 完了！"); runDialogue([ {n:"村人",t:`おや、第${from}層からの 届け物かい？ わざわざ ありがとうね。`}, {n:"村人",t:`これは お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ]); }
+    function completeDelivery(){ const floor=world.floor; const gem=6+floor, gold=80+floor*10; const from=save.delivery.from; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; if(!save.deliveryDone)save.deliveryDone={}; save.deliveryDone[from]=true; save.delivery=null; persist(); showToast("📨 配達 完了！"); runDialogue([ {n:"村人",t:`おや、第${from}層からの 届け物かい？ わざわざ ありがとうね。`}, {n:"村人",t:`これは お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ]); }
     function npcTravelerStory(f){ const L=loreFor(f); const intro={n:"旅人",t:`この層の『${L.hunt}』は 厄介だぜ。${L.coll?`だが『${L.coll}』が 手に入るなら、挑む 価値は ある。`:`油断せず いけよ。`}`}; const lines=[ [{n:"旅人",t:"おれも テイマーさ。……でも もう ここで 足踏みして 長くてね。"},{n:"旅人",t:"ガチャ堂の 噂、聞いたか？ ごく稀に 伝説級の 相棒が 来るらしいぜ。"}], [{n:"旅人",t:"配合は 奥が 深い。同じ系統・属性を 重ねると、化けることが ある。"},{n:"旅人",t:"色々 試してみな。思わぬ 一体が 生まれるぜ。"}], [{n:"旅人",t:"フィールドで 光る 場所を 見かけたら、調べてみな。"},{n:"旅人",t:"ちょっとした“出来事”が あるかもしれん。"}] ]; return [intro].concat(lines[f%lines.length]); }
     function triggerFieldEvent(f){ if(!save.fieldEvent)save.fieldEvent={}; const key="f"+f;
       if(save.fieldEvent[key]){ runDialogue([{n:"ナビ",t:"…もう ここには 何も なさそう。"}]); return; }
@@ -1317,8 +1322,8 @@
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function seededRng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
-    const BOSS_PATTERNS=["report","key","twokeys","lever","twinlever","trilever","guardian","fragments","riddle","toll","torch","bridge","seal"];
-    function bossPattern(f){ return BOSS_PATTERNS[(f-1)%BOSS_PATTERNS.length]; } // 報告/鍵/2つの鍵/レバー/2連/3連/守護者/破片集め/謎かけ/通行料（連続しない循環）
+    // ボス到達は『依頼を達成→依頼主に報告』で物語に沿って開通（別途ランダムな鍵パズルは廃止＝整合重視）
+    function bossPattern(f){ return "report"; }
     function roomEntrance(g,r){ for(let y=r.y;y<r.y+r.h;y++){ if(g[y]&&g[y][r.x-1]===".")return[r.x-1,y]; if(g[y]&&g[y][r.x+r.w]===".")return[r.x+r.w,y]; } for(let x=r.x;x<r.x+r.w;x++){ if(g[r.y-1]&&g[r.y-1][x]===".")return[x,r.y-1]; if(g[r.y+r.h]&&g[r.y+r.h][x]===".")return[x,r.y+r.h]; } return null; }
     function buildDungeon(floor){
       // 層ごとに 構成が変わる迷宮（シード生成）。チェーン連結＝必ず到達可能。ボス部屋は層により施錠(L=鍵で開く)
@@ -1361,6 +1366,7 @@
       floor=floor||(world?world.floor:(save.floor||1));
       if(!world) world={};
       world.area=area; world.floor=floor;
+      if(floor>=5 && !save.fuseUnlocked){ save.fuseUnlocked=true; persist(); setTimeout(()=>runDialogue([ {n:"ナビ",t:"…なんだか 体の 奥が あたたかい。"}, {n:"ナビ",t:`${save.heroName||"テイマー"}、第5層まで 来たから かな——わたし、いま わかったの。`}, {n:"ナビ",t:"魔物どうしを かけ合わせる『配合』！ 配合所で、Lv10をこえた 2体から 新しい 相棒を 生み出せるよ！"} ]),500); }
       const m=area==="town"?buildTown(floor):(area==="field"?buildField(floor):buildDungeon(floor));
       world.grid=m.grid; world.W=m.W; world.H=m.H;
       world.px=m.spawn.x*TS+TS/2; world.py=m.spawn.y*TS+TS/2; world.grace=3; world.dist=0; world.keys=0; world.keyFloor=floor; world.keyNeed=(area==="dungeon"&&bossPattern(floor)==="twokeys")?2:1;
@@ -1569,7 +1575,7 @@
     function spawnEnemiesFor(f, isBossBattle, guardian){ run.enemies=[]; const lv=enemyLevelFor(f); const fm=floorMul(f);
       if(guardian){ const bp=bossPoolFor(f); const id=bp[Math.floor(Math.random()*bp.length)]; const e=makeEnemy(id,lv+1); e.name="守護者・"+SPECIES[id].name; e.bossFace="🛡️"; const m=1.5*fm; e.maxHp=Math.round(e.maxHp*m); e.hp=e.maxHp; e.atk=Math.round(e.atk*1.1*fm); e.def=Math.round(e.def*(1+(fm-1)*0.5)); e.isBoss=true; run.enemies=[e]; run.enemies.forEach(en=>markSeen(en.speciesId)); return; }
       if(isBossBattle){ const fin=f>=MAX_FLOOR; const bp=bossPoolFor(f); const id=fin?"archfiend":bp[Math.floor(Math.random()*bp.length)]; const e=makeEnemy(id,lv+3); e.name=(fin?"管理者・":"ボス・")+SPECIES[id].name; e.bossFace=fin?"😈":"👑"; const m=(fin?2.6:1.8)*fm; e.maxHp=Math.round(e.maxHp*m); e.hp=e.maxHp; e.atk=Math.round(e.atk*(fin?1.3:1.15)*fm); e.def=Math.round(e.def*(1+(fm-1)*0.5)); e.isBoss=true; run.enemies=[e]; }
-      else { const n=enemyCountForFloor(f); const L=["Ⓐ","Ⓑ","Ⓒ"]; const wp=wildPoolFor(f); for(let i=0;i<n;i++){ const id=wp[Math.floor(Math.random()*wp.length)]; const elv=Math.max(1, lv + (Math.floor(Math.random()*5)-2)); const e=makeEnemy(id,elv); e.maxHp=Math.round(e.maxHp*fm); e.hp=e.maxHp; e.atk=Math.round(e.atk*fm); e.def=Math.round(e.def*(1+(fm-1)*0.5)); e.wildId=SPECIES[id].synth?null:id; e.label=n>1?L[i]:""; run.enemies.push(e); } }
+      else { const n=enemyCountForFloor(f); const L=["Ⓐ","Ⓑ","Ⓒ"]; const wp=wildPoolFor(f); for(let i=0;i<n;i++){ const id=wp[Math.floor(Math.random()*wp.length)]; let elv=Math.max(1, lv + (Math.floor(Math.random()*3)-1)); if(f<=2)elv=Math.min(elv,lv); const e=makeEnemy(id,elv); e.maxHp=Math.round(e.maxHp*fm); e.hp=e.maxHp; e.atk=Math.round(e.atk*fm); e.def=Math.round(e.def*(1+(fm-1)*0.5)); e.wildId=SPECIES[id].synth?null:id; e.label=n>1?L[i]:""; run.enemies.push(e); } }
       run.enemies.forEach(e=>markSeen(e.speciesId));
     }
     function enemyNames(){ return run.enemies.map(e=>e.name+(e.label?e.label:"")).join("、"); }
@@ -1640,8 +1646,9 @@
     const FX_SPR={ phys:"kogeki_cut_01", heavy:"kogeki_cut_02", crit:"kogeki_cut_02", gigaslash:"kogeki_cut_02", magic:"kogeki_hit_01", mag:"kogeki_hit_01", fire:"kogeki_hit_01", ice:"kogeki_hit_01", thunder:"kogeki_hit_01", io:"kogeki_hit_01", poison:"doku_purple", heal:"" };
     function flashFx(card,kind){ if(!card)return; const f=document.createElement("div"); f.className="fx "+(kind||"phys"); card.appendChild(f); setTimeout(()=>{ if(f.parentNode)f.parentNode.removeChild(f); },330);
       const spr=FX_SPR[kind]; if(spr){ const im=document.createElement("img"); im.src="img/"+spr+".png"; im.className="fx-spr"; card.appendChild(im); setTimeout(()=>{ if(im.parentNode)im.parentNode.removeChild(im); },360); } }
-    function flashEnemy(i,kind){ flashFx(el.enemyList.children[i],kind); }
-    function flashAlly(i,kind){ flashFx(el.allyList.children[i],kind); }
+    // renderBattle が直後に カードを作り直すので、次tickで（最新カードに）エフェクトを出す
+    function flashEnemy(i,kind){ setTimeout(()=>flashFx(el.enemyList.children[i],kind),0); }
+    function flashAlly(i,kind){ setTimeout(()=>flashFx(el.allyList.children[i],kind),0); }
     function showCommands(){ el.commands.classList.remove("hidden"); el.skillPanel.classList.add("hidden"); el.itemPanel.classList.add("hidden"); el.targetWrap.classList.add("hidden"); el.floorClear.classList.add("hidden"); el.result.classList.add("hidden"); el.turnHint.classList.remove("hidden"); }
     function hideAllPanels(){ el.commands.classList.add("hidden"); el.skillPanel.classList.add("hidden"); el.itemPanel.classList.add("hidden"); el.targetWrap.classList.add("hidden"); el.floorClear.classList.add("hidden"); el.turnHint.classList.add("hidden"); }
     function showFloorClearPanel(){ hideAllPanels(); el.floorClear.classList.remove("hidden"); }
@@ -1775,7 +1782,11 @@
     function loseBattle(){ busy=true; phase="clear"; hideAllPanels(); SFX.lose&&SFX.lose(); pendingResult=()=>{ enterArea("town", save.floor); };
       el.result.classList.remove("hidden"); el.resultMsg.textContent="… ぜんめつ …"; el.resultDetail.textContent="きを うしなった…\n🏨 さいごに たちよった 街の 宿屋で めざめた。（HP/MP 全回復）"; }
 
-    function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.38,0.12+floor*0.012); if(Math.random()>chance)return null; const ec=boss?0.4:Math.min(0.2,floor*0.012),rc=boss?0.45:Math.min(0.4,0.12+floor*0.02),r=Math.random(); let tier="common"; if(r<ec)tier="epic"; else if(r<ec+rc)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
+    // 層に応じた装備ティア（浅い層では強装備を出さない＝インフレ抑制）
+    function floorLootItem(floor){ const r=Math.random(); let tier="common"; if(floor>=12 && r<0.18)tier="epic"; else if(floor>=5 && r<0.45)tier="rare"; const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
+    function rollDrop(floor,boss){ const chance=boss?1:Math.min(0.16,0.05+floor*0.006); if(Math.random()>chance)return null; // 通常ドロップは控えめ＝武器が出すぎない
+      if(boss){ const r=Math.random(); let tier=r<0.35?"epic":(r<0.8?"rare":"common"); const pool=TIER_POOL[tier]; return makeItem(pool[Math.floor(Math.random()*pool.length)]); }
+      return floorLootItem(floor); }
     // エンチャント装備（既存装備＋特有効果。微弱強化のユニーク系。極低確率ドロップ/宝箱）
     let enchCounter=0;
     const ENCH=[ {ef:"crit",pre:"かいしんの",ic:"⚔️"},{ef:"guard",pre:"まもりの",ic:"🛡️"},{ef:"drain",pre:"きゅうけつの",ic:"⚔️"},{ef:"regen",pre:"いやしの",ic:"💍"},{ef:"twin",pre:"れんげきの",ic:"⚔️"} ];
@@ -1786,8 +1797,8 @@
       let msg;
       const pat=bossPattern(world.floor);
       if((pat==="key"||pat==="twokeys") && world.keys<world.keyNeed){ world.keys=(world.keys||0)+1; world.keyFloor=world.floor; const rem=world.keyNeed-world.keys; msg=`🔑 鍵 を 手に入れた！（この層専用${world.keyNeed>1?` ／ あと ${rem}本`:""}）`; }
-      else if(pat==="fragments"||pat==="bridge"){ const isB=pat==="bridge"; let it; if(Math.random()<0.4){ it=rollEnchant(world.floor); } else { it=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); } save.inventory.push(it); msg=`${isB?"🪵 木材":"🧩 破片"} と ${it.icon}${it.name} を 手に入れた！`; if(!gridHas("C")){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; dstateFor(world.floor).door=1; msg+=isB?"\n🪵 木材が そろい、橋が かかった！ 奥へ いける！":"\n🧩 すべての 破片が そろい、奥の扉が 開いた！"; } }
-      else { let it; if(Math.random()<0.4){ it=rollEnchant(world.floor); } else { it=makeItem(TIER_POOL.rare[Math.floor(Math.random()*TIER_POOL.rare.length)]); } save.inventory.push(it); msg=`${it.icon}${it.name} を 手に入れた！`; }
+      else if(pat==="fragments"||pat==="bridge"){ const isB=pat==="bridge"; const it=(world.floor>=8&&Math.random()<0.3)?rollEnchant(world.floor):floorLootItem(world.floor); save.inventory.push(it); msg=`${isB?"🪵 木材":"🧩 破片"} と ${it.icon}${it.name} を 手に入れた！`; if(!gridHas("C")){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; dstateFor(world.floor).door=1; msg+=isB?"\n🪵 木材が そろい、橋が かかった！ 奥へ いける！":"\n🧩 すべての 破片が そろい、奥の扉が 開いた！"; } }
+      else { const it=(world.floor>=8&&Math.random()<0.3)?rollEnchant(world.floor):floorLootItem(world.floor); save.inventory.push(it); msg=`${it.icon}${it.name} を 手に入れた！`; }
       persist(); SFX.buy&&SFX.buy(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); alert(`📦 宝箱！ ${msg}`); }
     const CAPTIVE={ 4:{n:"ミラ",t:["…たすけて くれて ありがとう。あなたの 魔物さん、つよいね。","お母さんの ところへ 帰れる…！ この恩は 忘れません。"]}, 9:{n:"猟師の仲間",t:["うう…吹雪で 動けなかった…。助かった、恩に着る。","『凍らぬ炎』、きみが 持っていけ。きっと 役に立つ。"]} };
     function rescueEvent(){ const f=world.floor; const cap=CAPTIVE[f]; const who=cap?cap.n:["旅のテイマー","行商人","迷子の子","見習い騎士","祠の巫女"][f%5];
@@ -1825,15 +1836,13 @@
     document.getElementById("world-menu").addEventListener("click",()=>showMenu());
     document.getElementById("menu-close").addEventListener("click",()=>{ document.getElementById("menu-overlay").classList.add("hidden"); if(world&&world.area==="town"){ syncParty(); world.party.forEach(healFull); } showWorld(); });
     document.querySelectorAll(".mtab").forEach(b=>b.addEventListener("click",()=>{ menuTab=b.dataset.mt; renderMenu(); }));
-    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-gotofloor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const nf=parseInt(ff.dataset.gotofloor,10); if(nf===(save.floor||1)){ alert("すでに この層に いるよ。"); return; } if(confirm(`第${nf}層 ${floorInfo(nf).town} へ 移動しますか？`)){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; floorWarp(nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const fh=e.target.closest("button[data-fieldheal]"); if(fh){ useFieldHeal(); return;} const tt=e.target.closest("button[data-title]"); if(tt){ if(confirm("タイトルに もどりますか？\n（オートセーブ済み。未保存の 進行が あれば 念のため 先に 💾セーブを）")){ persist(); document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; showTitle(); } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ save=defaultSave(); persist(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",1); } } });
-    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); if(world){ syncParty(); world.party.forEach(healFull); }
-      const nm=save.heroName||"テイマー";
-      runDialogue([ {n:"ナビ",t:`……${nm}。${nm}、聞こえる？ よかった、目を 覚ましたんだね！`}, {n:"ナビ",t:"わたしは“ナビ”——きみの 相棒の 妖精、ピクシーだよ。これから ずっと 一緒だ。"}, {n:"ナビ",t:"きみは 剣を 持てない【調教師】。でも 心配いらない。わたしたち 魔物が、きみの ために 戦うから。"} ].concat(floorStory(1)).concat([{n:"ナビ",t:"まずは 街の 受付（試験官）に 話しかけて、依頼（実技試験）を 受けよう！"}])); });
+    document.getElementById("menu-body").addEventListener("click",(e)=>{ const tg=e.target.closest("button[data-toggle]"); if(tg){togglePartyMember(tg.dataset.toggle); renderMenu(); return;} const eq=e.target.closest("button[data-equip]"); if(eq){equipUid=eq.dataset.equip; equipFilter="weapon"; menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); showEquip(); renderEquip(); return;} const av=e.target.closest("button[data-avatar]"); if(av){ save.avatar=av.dataset.avatar; persist(); renderMenu(); return;} const ff=e.target.closest("button[data-gotofloor]"); if(ff){ if(world&&world.area==="dungeon"){ alert("ダンジョン内では 層移動できません。街にもどってから ね。"); return; } const nf=parseInt(ff.dataset.gotofloor,10); if(nf===(save.floor||1)){ alert("すでに この層に いるよ。"); return; } if(confirm(`第${nf}層 ${floorInfo(nf).town} へ 移動しますか？`)){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; floorWarp(nf); } return;} const so=e.target.closest("button[data-story]"); if(so){ document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; runDialogue(so.dataset.story==="prologue"?PROLOGUE_STORY:floorStory(save.floor||1)); return;} const sa=e.target.closest("button[data-save]"); if(sa){ persist(); alert("セーブしました。"); return;} const ex=e.target.closest("button[data-export]"); if(ex){ persist(); const code=btoa(unescape(encodeURIComponent(JSON.stringify(save)))); prompt("この『セーブコード』をコピーして保管／別端末で読み込みできます：", code); return;} const im2=e.target.closest("button[data-import]"); if(im2){ const code=prompt("セーブコードを貼り付けてください（上書きされます）：",""); if(code){ try{ const obj=JSON.parse(decodeURIComponent(escape(atob(code.trim())))); save=obj; persist(); save=loadSave(); menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); enterArea("town",save.floor||1); alert("読み込みました。"); }catch(err){ alert("コードが正しくありません。"); } } return;} const fdi=e.target.closest("button[data-fielditem]"); if(fdi){ useFieldItem(fdi.dataset.fielditem); return;} const fh=e.target.closest("button[data-fieldheal]"); if(fh){ useFieldHeal(); return;} const tt=e.target.closest("button[data-title]"); if(tt){ if(confirm("タイトルに もどりますか？\n（オートセーブ済み。未保存の 進行が あれば 念のため 先に 💾セーブを）")){ persist(); document.getElementById("menu-overlay").classList.add("hidden"); menuOpen=false; showTitle(); } return;} const mu=e.target.closest("button[data-mute]"); if(mu){audioInit(); toggleMute(); renderMenu(); return;} const rs=e.target.closest("button[data-reset]"); if(rs){ if(confirm("ほんとうに さいしょから やりなおしますか？（すべて消えます）")){ menuOpen=false; document.getElementById("menu-overlay").classList.add("hidden"); save=defaultSave(); save.heroName=askHeroName(); persist(); enterArea("town",1); document.getElementById("intro").classList.remove("hidden"); } } });
+    document.getElementById("intro-start").addEventListener("click",()=>{ document.getElementById("intro").classList.add("hidden"); audioInit(); audioResume(); curBGM=null; playBGM("town"); renderNaviSelect(); document.getElementById("navi-select").classList.remove("hidden"); });
     const NAVI_OPT=[ {k:"navi_a",sys:"攻撃タイプ",d:"炎の魔法が 得意。ガンガン 攻める 相棒。"}, {k:"navi_b",sys:"回復タイプ",d:"全体回復が 得意。粘り強く 戦える 相棒。"}, {k:"navi_c",sys:"バランスタイプ",d:"全体魔法と 物理を こなす 万能な 相棒。"} ];
     function renderNaviSelect(){ const box=document.getElementById("navi-options"); box.innerHTML=""; NAVI_OPT.forEach(o=>{ const sp=SPECIES[o.k]; const b=document.createElement("button"); b.className="navi-opt"; b.innerHTML=`<img src="${SKINS[o.k]}" alt=""><div><div class="nv-n">${sp.name}（${o.sys}）</div><div class="nv-d">${o.d}</div></div>`; b.addEventListener("click",()=>applyNavi(o.k)); box.appendChild(b); }); }
-    function applyNavi(key){ const m=newMember(key,1); save.box.unshift(m); if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid].concat((save.partyUids||[]).filter(u=>u!==m.uid)).slice(0,MAX_PARTY); save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); }
-      const nm=save.heroName||"テイマー"; const intro=[ {n:"ナビ",t:`……${nm}。${nm}、聞こえる？ よかった、目を 覚ましたんだね！`}, {n:"ナビ",t:`わたしは“${SPECIES[key].name}”——みんなは “ナビ” って 呼ぶ。きみと 契約した 相棒の 魔物だよ。これから ずっと 一緒だ。`}, {n:"ナビ",t:"きみは 剣を 持てない【調教師】。でも 心配いらない——わたしたち 魔物が、きみの ために 戦うから。"} ];
-      runDialogue(intro.concat(floorStory(1)).concat(questBrief(1))); }
+    function applyNavi(key){ const m=newMember(key,3); save.box=[m]; if(!save.seen)save.seen={}; save.seen[key]=true; save.partyUids=[m.uid]; save.navi=key; save.introSeen=true; if(!save.storySeen)save.storySeen={}; save.storySeen.f1=true; persist(); document.getElementById("navi-select").classList.add("hidden"); if(world){ syncParty(); world.party.forEach(healFull); updateWorldHead(); }
+      const nm=save.heroName||"テイマー"; const intro=[ {n:"ナビ",t:`……${nm}。${nm}、聞こえる？ よかった、目を 覚ましたんだね！`}, {n:"ナビ",t:`わたしは“${SPECIES[key].name}”——みんなは “ナビ” って 呼ぶ。きみが 選んでくれた、契約の 相棒だよ。これから ずっと 一緒だ。`}, {n:"ナビ",t:"きみは 剣を 持てない【調教師】。でも 心配いらない——わたしたち 魔物が、きみの ために 戦うから。"} ];
+      runDialogue(intro.concat(floorStory(1)).concat([{n:"ナビ",t:"まずは 街の『試験官』に 話しかけて、テイマー登録の 依頼を 受けよう！"}])); }
     document.getElementById("dialogue").addEventListener("click",advanceDlg);
     document.getElementById("go-fuse").addEventListener("click",()=>{ fuseSel=[]; showFuse(); renderFuse(); });
     document.getElementById("go-gacha").addEventListener("click",()=>{ showGacha(); });
