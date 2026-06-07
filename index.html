@@ -1249,38 +1249,42 @@
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
     // ===== 街：施設＋石畳の十字路＋家＋木＋下の門→フィールド =====
+    const INTERACTABLES=new Set(["I","S","F","G","N","V","P","X","o","T","D","B","E","Q","Y","Z","W","L","M"]);
+    function scatterDeco(g,W,H,ch,n,rnd,sp){ let p=0,t=0; while(p<n&&t<n*12){ t++; const x=1+Math.floor(rnd()*(W-2)), y=1+Math.floor(rnd()*(H-2)); if(g[y][x]!=="g")continue; if(Math.abs(x-sp.x)<=1&&Math.abs(y-sp.y)<=1)continue; let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){ const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&INTERACTABLES.has(nb)){near=true;break;} } if(near)continue; g[y][x]=ch; p++; } }
     function buildTown(floor){
-      const W=24,H=18; const g=[];
+      const rnd=seededRng(floor*131+5); const W=24,H=18; const g=[];
       for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++){ row.push((x===0||y===0||x===W-1||y===H-1)?"#":"g"); } g.push(row); }
       const cx1=11,cx2=12;
-      for(let x=1;x<W-1;x++){ g[6][x]="p"; g[11][x]="p"; }        // 横の大通り2本
-      for(let y=1;y<H-1;y++){ g[y][cx1]="p"; g[y][cx2]="p"; }     // 縦の大通り
-      for(let y=7;y<=10;y++)for(let x=9;x<=14;x++) g[y][x]="p";   // 中央広場
-      g[8][11]="o"; g[8][12]="o"; g[9][11]="p"; g[9][12]="p";     // 噴水
-      g[3][4]="I"; g[3][19]="S"; g[14][4]="F"; g[14][19]="G";     // 宿/武器/配合/ガチャ
-      // 家並み（道沿いに多数）
-      [[2,3],[6,3],[9,3],[15,3],[18,3],[21,3], [2,9],[6,9],[18,9],[21,9], [2,14],[7,14],[10,14],[16,14],[21,14]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="h"; });
-      // 木（縁取り・点在）
-      [[1,2],[22,2],[1,8],[22,8],[1,15],[22,15],[5,5],[18,5],[5,12],[18,12],[9,16],[14,16]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="t"; });
-      g[9][8]="N"; g[9][15]="V"; g[5][7]="P";                     // NPC: 案内人/村人/旅人
-      g[H-1][cx1]="X"; g[H-1][cx2]="X";                           // 下の門→フィールド
-      return {grid:g,W,H,spawn:{x:cx1,y:H-3}};
+      for(let x=1;x<W-1;x++){ g[6][x]="p"; g[11][x]="p"; }
+      for(let y=1;y<H-1;y++){ g[y][cx1]="p"; g[y][cx2]="p"; }
+      for(let y=7;y<=10;y++)for(let x=9;x<=14;x++) g[y][x]="p";
+      g[8][11]="o"; g[8][12]="o"; g[9][11]="p"; g[9][12]="p";
+      // 施設の角を層ごとに 少し入れ替え（見た目変化）
+      const corners=[[4,3],[19,3],[4,14],[19,14]]; const fac=["I","S","F","G"]; for(let i=fac.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); const tmp=fac[i];fac[i]=fac[j];fac[j]=tmp; }
+      corners.forEach((c,i)=>{ g[c[1]][c[0]]=fac[i]; });
+      g[9][8]="N"; g[9][15]="V"; g[5][7]="P";
+      g[H-1][cx1]="X"; g[H-1][cx2]="X";
+      const sp={x:cx1,y:H-3};
+      scatterDeco(g,W,H,"h",11+Math.floor(rnd()*6),rnd,sp); // 家
+      scatterDeco(g,W,H,"t",8+Math.floor(rnd()*6),rnd,sp);  // 木
+      return {grid:g,W,H,spawn:sp};
     }
-    // ===== フィールド：海に囲まれた草原・砂浜・木立・池＋街ゲート＋ダンジョン洞窟 =====
+    // ===== フィールド：海に囲まれた草原・砂浜・木立・池＋街ゲート＋ダンジョン洞窟（層ごと変化） =====
     function buildField(floor){
-      const W=30,H=22; const g=[];
+      const rnd=seededRng(floor*73+9); const W=30,H=22; const g=[];
       for(let y=0;y<H;y++){ const row=[]; for(let x=0;x<W;x++){ let c="g"; if(x<=1||y<=1||x>=W-2||y>=H-2)c="w"; else if(x<=2||y<=2||x>=W-3||y>=H-3)c="s"; row.push(c);} g.push(row); }
-      // 木立（数か所のかたまり）
-      [[6,5],[7,5],[6,6],[7,6],[8,6],[7,7], [20,6],[21,6],[22,6],[20,7],[21,7], [11,14],[12,14],[13,14],[12,15], [24,15],[25,15],[24,16], [16,18],[17,18]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="t"; });
-      for(let y=9;y<=12;y++)for(let x=15;x<=18;x++) if(g[y]&&g[y][x]==="g")g[y][x]="w"; // 池
-      [[14,10],[19,10],[16,13]].forEach(([x,y])=>{ if(g[y]&&g[y][x]==="g")g[y][x]="s"; });
-      // 石畳の道（街ゲート↔洞窟をゆるく繋ぐ）
+      // 石畳の道（街ゲート↔洞窟）＋ゲート/洞窟/イベントは固定（到達保証）
       for(let x=5;x<=24;x++) if(g[H-5]&&g[H-5][x]==="g")g[H-5][x]="p";
       for(let y=4;y<=H-5;y++) if(g[y]&&g[y][24]==="g")g[y][24]="p";
-      g[H-4][5]="T";   // 街ゲート（下・道沿い）
-      g[3][24]="D";    // ダンジョン洞窟（右上・道の先）
-      if(!save.fieldEvent||!save.fieldEvent["f"+floor]){ if(g[8]&&g[8][9]==="g")g[8][9]="E"; } // イベント(未消化のみ)
-      return {grid:g,W,H,spawn:{x:6,y:H-5}};
+      g[H-4][5]="T"; g[3][24]="D";
+      const sp={x:6,y:H-5};
+      // 池（層ごとに 位置・大きさ変化）
+      const pw=2+Math.floor(rnd()*2), ph=2+Math.floor(rnd()*2), px=4+Math.floor(rnd()*14), py=4+Math.floor(rnd()*9);
+      for(let y=py;y<py+ph;y++)for(let x=px;x<px+pw;x++){ if(g[y]&&g[y][x]==="g"){ let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&INTERACTABLES.has(nb))near=true;} if(!near&&!(Math.abs(x-24)<=1))g[y][x]="w"; } }
+      if(!save.fieldEvent||!save.fieldEvent["f"+floor]){ // イベント(未消化のみ)：草地に1つ
+        for(let tries=0;tries<40;tries++){ const x=4+Math.floor(rnd()*20), y=4+Math.floor(rnd()*12); if(g[y][x]==="g"){ g[y][x]="E"; break; } } }
+      scatterDeco(g,W,H,"t",14+Math.floor(rnd()*8),rnd,sp); // 木立
+      return {grid:g,W,H,spawn:sp};
     }
     // ===== ダンジョン：石レンガの部屋を通路でつなぐ＋層ボス＋出口→フィールド =====
     function seededRng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
@@ -1520,10 +1524,10 @@
       let okSetup=false;
       try{
         world.party.forEach(a=>{ a.status={}; a.guardUp=false; a.defending=false; });
-        run={ allies: world.party, enemies:[], floor: world.floor, drops:[], recruits:[], gems:0, context:guardian?"guardian":(isBossBattle?"boss":"field"), guardian:!!guardian };
+        run={ allies: world.party.slice(), enemies:[], floor: world.floor, drops:[], recruits:[], gems:0, context:guardian?"guardian":(isBossBattle?"boss":"field"), guardian:!!guardian };
+        if(isBossBattle && (world.floor===10||world.floor===20)){ const guest=makeGuest(); if(guest){ run.allies.push(guest); run._escort=true; } } // カイ同行＝相棒が参戦
         spawnEnemiesFor(world.floor, isBossBattle, guardian); await preloadBattleImgs(run.enemies.concat(run.allies)); showDungeon(); renderBattle(); playBGM((isBossBattle||guardian)?"boss":"battle");
         run.order=null; run.turnIdx=0; run.cur=null; phase="player"; okSetup=true;
-        if(isBossBattle && (world.floor===10||world.floor===20)){ run.allies.forEach(a=>{ if(a.hp>0){ a.status=a.status||{}; a.status.atkUp=4; } }); run._escort=true; } // カイ同行＝共闘バフ
       }catch(err){ console.error("startEncounter setup error:",err); }
       // オーバーレイは何があっても必ず消す（黒画面固着の防止）
       t.classList.remove("bt-in","bt-out"); t.classList.add("hidden");
@@ -1644,7 +1648,8 @@
       // ねむり：行動できない
       if(st.sleep>0){ st.sleep--; phase=isAlly(u)?"player":"enemy"; renderBattle(); el.turnHint.innerHTML=`▶ ${u.name}`; log(`${u.name}は ねむっている…💤`); run.turnIdx++; setTimeout(nextTurn,750); return; }
       const rg=regenTick(u);
-      if(isAlly(u)){ run.cur=u; phase="player"; renderBattle(); showCommands(); busy=false; el.turnHint.classList.remove("enemy-turn"); el.turnHint.classList.remove("hidden"); el.turnHint.innerHTML=`🟢 ${u.name} の ターン！`; log(`${rg?regenPre(rg):""}コマンドを えらんでください。`); }
+      if(isAlly(u) && u.guest){ run.cur=u; phase="enemy"; busy=true; renderBattle(); el.turnHint.classList.remove("hidden","enemy-turn"); el.turnHint.innerHTML=`🤝 ${u.name} の ターン（同行）`; setTimeout(()=>guestAct(u),650); }
+      else if(isAlly(u)){ run.cur=u; phase="player"; renderBattle(); showCommands(); busy=false; el.turnHint.classList.remove("enemy-turn"); el.turnHint.classList.remove("hidden"); el.turnHint.innerHTML=`🟢 ${u.name} の ターン！`; log(`${rg?regenPre(rg):""}コマンドを えらんでください。`); }
       else { phase="enemy"; busy=true; run.cur=u; renderBattle(); el.turnHint.classList.remove("hidden"); el.turnHint.classList.add("enemy-turn"); el.turnHint.innerHTML=`🔴 ${u.name} の ターン`; enemyAct(u).then(()=>{ run.turnIdx++; nextTurn(); }); }
     }
     function curActor(){ return run.cur; }
@@ -1763,6 +1768,8 @@
       if(gridHas("W")){ persist(); runDialogue([{n:"ナビ",t:"カチッ…！ でも まだ 開かない。レバーは もう ひとつ あるみたい。"}]); }
       else { for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); showToast("🎚️ 奥の扉が 開いた！"); runDialogue([{n:"ナビ",t:"ゴゴゴ…！ 奥の 扉が 開いた！ 主のもとへ いこう。"}]); } }
     function startGuardian(tx,ty){ world.guardianPos={x:tx,y:ty}; startEncounter(false,true); }
+    function makeGuest(){ try{ const ps=world.party||[]; const avg=ps.length?Math.round(ps.reduce((s,a)=>s+a.level,0)/ps.length):10; const tm=newMember("navi_a2",Math.max(8,avg+1)); const a=makeAlly(tm); a.uid="guest_kai"; a.name="カイの相棒"; a.guest=true; return a; }catch(e){ return null; } }
+    async function guestAct(u){ if(u.hp<=0){ run.turnIdx++; nextTurn(); return; } const targets=run.enemies.filter(e=>e.hp>0); if(!targets.length){ run.turnIdx++; nextTurn(); return; } const tgt=targets[Math.floor(Math.random()*targets.length)]; const ti=run.enemies.indexOf(tgt); const r=resolveDamage(u,tgt,{kind:"phys",power:1.1}); tgt.hp-=r.dmg; shakeEnemy(ti); flashEnemy(ti,r.crit?"crit":"phys"); (r.crit?SFX.crit:SFX.hit)&&(r.crit?SFX.crit():SFX.hit()); renderBattle(); log(`<span class="scout">🤝 ${u.name}の こうげき！</span> ${enLabel(tgt)}に ${r.dmg}！`); await wait(720); if(allEnemiesDead()){ await onBattleWon(); return; } run.turnIdx++; nextTurn(); }
     const RIDDLES=[ {q:"パンは パンでも たべられない パンは？",a:["フライパン","ふらいぱん"]}, {q:"つめたくて しろい、空から ふる ものは？",a:["ゆき","雪","スノー"]}, {q:"夜空で ひかる、ちいさな ひかりは？",a:["ほし","星","スター"]}, {q:"1年で いちばん さむい きせつは？",a:["ふゆ","冬"]}, {q:"うみに いて、ハサミを もつ いきものは？",a:["かに","カニ","蟹"]}, {q:"あかくて まるい、木に なる くだもの（りんご以外で 一つ）…ヒント:さるが すき",a:["もも","桃"]} ];
     function openBossNow(){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; dstateFor(world.floor).door=1; }
     function riddleEvent(tx,ty){ const r=RIDDLES[(world.floor-1)%RIDDLES.length]; const ans=(prompt("石碑の なぞかけ：\n\n"+r.q+"\n\n（こたえを 入力）","")||"").trim(); if(r.a.includes(ans)){ world.grid[ty][tx]="."; dstateFor(world.floor).riddle=1; openBossNow(); persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("💡 正解！ 扉が 開いた"); runDialogue([{n:"ナビ",t:"せいかい！ ゴゴゴ…と 奥の 扉が 開いたよ！"}]); } else { runDialogue([{n:"ナビ",t:"うーん、ちがうみたい…。もう一度 考えてみよう。"}]); } }
