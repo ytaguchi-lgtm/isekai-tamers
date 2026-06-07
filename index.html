@@ -779,9 +779,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, fetchDone:{}, fuseUnlocked:false, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
+    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, fetchDone:{}, errand:{}, fuseUnlocked:false, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(!s.fetchDone)s.fetchDone={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(!s.fetchDone)s.fetchDone={}; if(!s.errand)s.errand={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -1120,7 +1120,7 @@
     /* ===== タイル世界エンジン（シームレス移動・カメラ・建物） ===== */
     const TS=32, VIEW=14; // タイル32px、表示14x14（画面を広く活用）
     const SOLID_TOWN=new Set(["t","o","w","#","h","I","S","F","G","N","V","P"]); // 木/噴水/水/壁/家/施設/人に突き当たる
-    const SOLID_FIELD=new Set(["w","t","D","T"]); // 水/木/塔(ダンジョン)/街ゲートに突き当たる
+    const SOLID_FIELD=new Set(["w","t","D","T","U"]); // 水/木/塔/街ゲート/集落に突き当たる
     const SOLID_DUN=new Set(["#","r","L"]);
     function solidSet(){ return world.area==="town"?SOLID_TOWN:(world.area==="field"?SOLID_FIELD:SOLID_DUN); }
     let world=null, pendingResult=null, worldLoopOn=false, menuOpen=false, rafStarted=false;
@@ -1186,8 +1186,8 @@
     /* ===== クエスト：各層の物語仕立ての“試練”を こなすと 層ボスに 挑める ===== */
     // 収集物の入手元：chest=専用の収集宝箱 / drop=その層の特定モンスターのドロップ限定
     function dropSpeciesFor(f){ const wp=wildPoolFor(f); return (wp&&wp.length)?wp[0]:null; }
-    function collectPlan(f){ if(f===1)return null; const L=loreFor(f); if(!L.coll)return null; const txt=(L.brief||[]).map(b=>b.t).join(""); if(L.rescue===true||/救出|さらわ|囚わ|助けて|遭難/.test(txt))return null; const n=2+Math.floor(f/8); // 2〜5（以前1〜2＝ぬるい を解消）
-      const source=(f%3===0)?"drop":"chest"; // 3,6,9…層＝特定モンスター限定ドロップ / 他＝専用宝箱
+    function collectPlan(f){ if(f===1)return null; const L=loreFor(f); if(!L.coll)return null; const txt=(L.brief||[]).map(b=>b.t).join(""); if(L.rescue===true||/救出|さらわ|囚わ|助けて|遭難/.test(txt))return null; const n=2+Math.floor(f/8); // 2〜5（ぬるい解消）
+      const source=["drop","chest","delivery"][f%3]; // ドロップ / 専用宝箱 / 集落への届け物(往復)
       return { item:L.coll, n, source, species:(source==="drop")?dropSpeciesFor(f):null }; }
     function questsForFloor(f){ const huntN=3+Math.floor(f/3);
       if(f===1) return [{type:"hunt",n:3}];   // 試験＝討伐のみ
@@ -1242,7 +1242,10 @@
     function questProg(f){ if(!save.quest)save.quest={}; if(!save.quest[f])save.quest[f]={h:0,c:0,r:0}; if(save.quest[f].r===undefined)save.quest[f].r=0; return save.quest[f]; }
     function questDone(f){ const p=questProg(f); return questsForFloor(f).every(q=> q.type==="hunt"?p.h>=q.n:(q.type==="collect"?p.c>=q.n:p.r>=q.n)); }
     function questText(f){ const p=questProg(f),L=loreFor(f); return questsForFloor(f).map(q=> q.type==="hunt"?`🗡️魔物 ${Math.min(p.h,q.n)}/${q.n}`:(q.type==="collect"?`📦${L.coll} ${Math.min(p.c,q.n)}/${q.n}`:`🆘救出 ${Math.min(p.r,q.n)}/${q.n}`)).join("　"); }
-    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f),g=questGiver(f),cp=collectPlan(f); const obj=qs.map(q=>{ if(q.type==="hunt")return `・この層を 荒らす『${L.hunt}』を 中心に 魔物を ${q.n}体 たおす`; if(q.type==="rescue")return "・ダンジョンに 囚われた 者を 助け出す"; const src=(cp&&cp.source==="drop")?`（『${SPECIES[cp.species]?SPECIES[cp.species].name:"特定の魔物"}』が まれに 落とす）`:"（ダンジョンの “きらめく宝箱”から）"; return `・『${L.coll}』を ${q.n}個 あつめる${src}`; }).join("\n"); return L.brief.concat([ {n:g,t:"【依頼】\n"+obj}, {n:g,t:"達成すると ダンジョン奥の“層の主”への 扉が ひらく。終わったら 報告に きてくれ。"} ]); }
+    function questBrief(f){ const L=loreFor(f),qs=questsForFloor(f),g=questGiver(f),cp=collectPlan(f); const isDeli=cp&&cp.source==="delivery";
+      const huntWhy=isDeli?`・フィールドの『集落』を 襲う『${L.hunt}』を 中心に 魔物を `:`・この層を 荒らす『${L.hunt}』を 中心に 魔物を `;
+      const obj=qs.map(q=>{ if(q.type==="hunt")return `${huntWhy}${q.n}体 たおす`; if(q.type==="rescue")return "・ダンジョンに 囚われた 者を 助け出す"; const src=cp&&cp.source==="drop"?`（『${SPECIES[cp.species]?SPECIES[cp.species].name:"特定の魔物"}』が まれに 落とす）`:(cp&&cp.source==="delivery"?"（街の“旅人”の 荷を フィールドの“集落”へ 届けて 受け取る）":"（ダンジョンの “きらめく宝箱”から）"); return `・『${L.coll}』を ${q.n}個 あつめる${src}`; }).join("\n");
+      return L.brief.concat([ {n:g,t:"【依頼】\n"+obj}, {n:g,t:"達成すると ダンジョン奥の“層の主”への 扉が ひらく。終わったら 報告に きてくれ。"} ]); }
     function questDoneStory(f){ return (loreFor(f).done||[{n:"ナビ",t:"試練 達成！ 層ボスに 挑めるよ。"}]); }
     function afterQuest(f,wasDone){ if(!wasDone && questDone(f)){ showToast("✨ クエスト達成！ 層ボスに 挑める！"); SFX.fanfare&&SFX.fanfare(); } else { showToast("クエスト  "+questText(f)); } }
     function addHunt(f,n){ const p=questProg(f); if(!p.accepted){ showToast(`街の『${questGiver(f)}』から 依頼を 受けてから`); return; } if(questDone(f))return; const was=questDone(f); p.h+=(n||1); persist(); afterQuest(f,was); }
@@ -1260,6 +1263,9 @@
       return milestone?milestone.concat(base):base;
     }
     function npcGuideStory(){ const f=world.floor; const p=questProg(f); const g=questGiver(f); const L=loreFor(f);
+      // —— 往復の最終段：集落の『礼状』を 依頼主に 渡す（delivery層） ——
+      if(p.accepted && floorFlow(f)==="delivery" && errandStage(f)===2){ setErrand(f,3); const gold=60+f*10, gem=2+Math.floor(f/4); save.gold=(save.gold||0)+gold; save.gems=(save.gems||0)+gem; persist(); SFX.fanfare&&SFX.fanfare(); showToast(`📜 礼状を 届けた！ 💰+${gold} 💎+${gem}`);
+        return [ {n:g,t:"おや、集落からの 礼状か。…ふむ、きみは 向こうでも 慕われてるな。"}, {n:g,t:`手間を かけたね。これは わたしからも 礼だ。（💰+${gold} 💎+${gem}）`}, {n:g,t:"さあ、収集も 済んだはず。あとは 依頼の 報告を 待ってるよ。"} ]; }
       // —— 受注：依頼主の事情を聞く → 支度の品を 受け取る ——
       if(!p.accepted){ p.accepted=true; const gid=questGiftItem(f); const gname=CONSUM[gid]?CONSUM[gid].name:"やくそう"; const n2=(f<=6?2:1); save.consumables[gid]=(save.consumables[gid]||0)+n2; persist(); showToast(`📜 依頼 受注！ ${gname}×${n2} を 受け取った`);
         return questBrief(f).concat([ {n:g,t:`これを 持っていけ。『${gname}』を ${n2}つ。せめてもの 支度だ。`}, {n:g,t:"きみと 魔物たちの 武運を 祈る。終わったら 必ず 報告に きてくれ。"} ]); }
@@ -1281,25 +1287,32 @@
       const flavor=[ `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば HP・MP 全回復。むりは しなさんな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `早く 外の 世界に 帰りたいね。…あんたなら、やれるかもな。`, `この街の 子も ダンジョンに 憧れてる。あんたは 憧れの テイマーさ。` ];
       return [ {n:"村人",t:st}, {n:"村人",t:flavor[(f*2+ (p.reported?5:f))%flavor.length]} ];
     }
-    // 層ごとの“流れの型”（隣り合う層で必ず変わる）：delivery=届け物で収集物が手に入る / fetch=助言＋支度 / lore=情報
-    function floorFlow(f){ if(f<2)return "lore"; return ["delivery","fetch","lore"][(f-2)%3]; }
-    function travelerTalk(){ const f=world.floor;
-      if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。村人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層《${floorInfo(to).town}》の 人へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
-      const flow=floorFlow(f), L=loreFor(f), hasColl=questsForFloor(f).some(q=>q.type==="collect");
-      // ① 届け物＝この層の収集物が報酬で手に入る（物語に統合）
-      if(flow==="delivery" && f>=2 && hasColl && !(save.deliveryDone&&save.deliveryDone[f])){
-        if(confirm(`旅人「下の 第${f-1}層《${floorInfo(f-1).town}》の 知り合いへ 届け物を 頼みたい。\nお礼に、この層で 探してる『${L.coll}』を ひとつ ゆずるよ。引き受ける？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast(`📨 おつかいを 引き受けた（第${f-1}層へ）`); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層《${floorInfo(f-1).town}》で 渡して くれ。戻ったら 『${L.coll}』を 渡すよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
-      // ② お使い前提の助言＝支度の品をくれる（1回）
-      if(flow==="fetch" && !(save.fetchDone&&save.fetchDone[f])){
-        if(!save.fetchDone)save.fetchDone={}; save.fetchDone[f]=true; save.consumables.potion=(save.consumables.potion||0)+1; persist(); showToast("🎒 やくそう×1 を もらった");
-        return runDialogue([ {n:"旅人",t:`あんた、これから『${L.hunt}』と やり合うのかい。無茶を するなあ。`}, {n:"旅人",t:`これ、やくそうだ。持っていきな。${hasColl?`『${L.coll}』は ダンジョンの 宝箱に あるはずだ。`:"気を つけてな。"}`} ]); }
-      // ③ それ以外＝この層ならではの 情報
+    // 旅人の流れ＝収集の入手元に連動（delivery=集落へ届けて受け取る / chest・drop=支度の助言 / lore=情報）
+    function floorFlow(f){ const cp=collectPlan(f); return cp?cp.source:"lore"; }
+    function errandStage(f){ return (save.errand&&save.errand[f])||0; }
+    function setErrand(f,s){ if(!save.errand)save.errand={}; save.errand[f]=s; persist(); }
+    // 町の旅人(P)：delivery層では“集落への届け物”を起点に。chest/drop層は支度の助言。それ以外は情報。
+    function travelerTalk(){ const f=world.floor; const cp=collectPlan(f), L=loreFor(f), flow=floorFlow(f);
+      if(flow==="delivery" && cp){ const st=errandStage(f);
+        if(!questProg(f).accepted) return runDialogue([{n:"旅人",t:`先に ${questGiver(f)}の 依頼を 受けてきな。話は それからだ。`}]);
+        if(st===0){ setErrand(f,1); showToast("📨 集落への 届け物を 預かった"); return runDialogue([ {n:"旅人",t:`ちょうどいい。フィールドの『集落』に いる 仲間へ、この荷を 届けてほしい。`}, {n:"旅人",t:`集落の 者が、きみの 探す『${L.coll}』を 分けて くれるはずだ。`}, {n:"ナビ",t:"フィールド（街の 下の 門から）に 出て『集落』を さがそう！"} ]); }
+        if(st===1) return runDialogue([{n:"旅人",t:`まだ 集落に 荷を 届けてないね。フィールドの『集落』へ 急いで。`}]);
+        if(st===2) return runDialogue([{n:"旅人",t:`集落から 礼状を 預かったろう？ それを ${questGiver(f)}に 渡すと いい。御礼が あるそうだ。`}]);
+        return runDialogue([{n:"旅人",t:"いつも 助かるよ。気を つけて！"}]); }
+      if((flow==="chest"||flow==="drop") && !(save.fetchDone&&save.fetchDone[f])){ if(!save.fetchDone)save.fetchDone={}; save.fetchDone[f]=true; save.consumables.potion=(save.consumables.potion||0)+1; persist(); showToast("🎒 やくそう×1 を もらった");
+        const hint=flow==="chest"?`『${L.coll}』は ダンジョンの “きらめく宝箱”に あるぞ。`:`『${L.coll}』は その層の『${cp&&cp.species&&SPECIES[cp.species]?SPECIES[cp.species].name:"特定の魔物"}』だけが 落とす。`;
+        return runDialogue([ {n:"旅人",t:`これから『${L.hunt}』と やり合うのか。やくそうを 持っていきな。`}, {n:"旅人",t:hint} ]); }
       runDialogue(npcTravelerStory(f)); }
-    function completeDelivery(){ const to=world.floor; const from=save.delivery.from; const Lf=loreFor(from); const fromHasColl=questsForFloor(from).some(q=>q.type==="collect");
-      const gem=3+Math.floor(from/2), gold=40+from*8; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; if(!save.deliveryDone)save.deliveryDone={}; save.deliveryDone[from]=true; save.delivery=null; persist();
-      const lines=[ {n:"村人",t:`第${from}層《${floorInfo(from).town}》からの 届け物だね。わざわざ ありがとう。`}, {n:"村人",t:`お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ];
-      if(fromHasColl){ const acc=questProg(from).accepted; lines.push({n:"村人",t:`それと これ——${floorInfo(from).town}の 旅人から「渡してくれ」と。第${from}層で 探してた『${Lf.coll}』だよ。`}); if(acc){ addCollect(from); lines.push({n:"ナビ",t:`『${Lf.coll}』を ひとつ 入手！ 第${from}層の 依頼に カウントされたよ（残りは ダンジョンの 宝箱で）。`}); } else { lines.push({n:"ナビ",t:`『${Lf.coll}』を 受け取った。第${from}層で 依頼を 受けたら 役に立つよ。`}); } }
-      showToast("📨 配達 完了！"); runDialogue(lines); }
+    // フィールドの集落(U)：delivery層の往復の受け渡し点。収集物はここで まとめて 手に入る。
+    function hamletTalk(){ const f=world.floor; const cp=collectPlan(f), L=loreFor(f), flow=floorFlow(f), g=questGiver(f);
+      if(!(flow==="delivery"&&cp)) return runDialogue([ {n:"集落の人",t:`ここは フィールドの ちいさな 集落だ。${L.hunt?`『${L.hunt}』が うろついて 物騒でね…。`:"気を つけて 旅を。"}`}, {n:"集落の人",t:"街の 人たちにも よろしくな。"} ]);
+      if(!questProg(f).accepted) return runDialogue([{n:"集落の人",t:`${g}の 依頼を 受けてから また おいで。`}]);
+      const st=errandStage(f);
+      if(st===0) return runDialogue([{n:"集落の人",t:"街の『旅人』から 荷物を 預かってきて おくれ。話は それからだ。"}]);
+      if(st===1){ for(let i=0;i<cp.n;i++)addCollect(f); setErrand(f,2); SFX.fanfare&&SFX.fanfare(); showToast(`✨『${L.coll}』×${cp.n} を 受け取った`);
+        return runDialogue([ {n:"集落の人",t:"おお、旅人の 荷だね。わざわざ ありがとう、助かったよ！"}, {n:"集落の人",t:`お礼に、約束の『${L.coll}』を ${cp.n}個 まとめて 渡そう。これで 依頼の 収集は ばっちりだ。`}, {n:"ナビ",t:`『${L.coll}』×${cp.n} 入手！ 収集 達成！`}, {n:"集落の人",t:`それと——この『礼状』を、街の ${g}に 渡してくれ。ちょっとした 御礼が あるそうだ。（往復だが、頼むよ）`} ]); }
+      if(st===2) return runDialogue([{n:"集落の人",t:`礼状は 街の ${g}へ 届けてくれ。よろしく 頼むよ。`}]);
+      return runDialogue([{n:"集落の人",t:"きみの おかげで 集落は 平穏だ。本当に ありがとう。"}]); }
     function npcTravelerStory(f){ const L=loreFor(f); const intro={n:"旅人",t:`この層の『${L.hunt}』は 厄介だぜ。${L.coll?`だが『${L.coll}』が 手に入るなら、挑む 価値は ある。`:`油断せず いけよ。`}`}; const lines=[ [{n:"旅人",t:"おれも テイマーさ。……でも もう ここで 足踏みして 長くてね。"},{n:"旅人",t:"ガチャ堂の 噂、聞いたか？ ごく稀に 伝説級の 相棒が 来るらしいぜ。"}], [{n:"旅人",t:"配合は 奥が 深い。同じ系統・属性を 重ねると、化けることが ある。"},{n:"旅人",t:"色々 試してみな。思わぬ 一体が 生まれるぜ。"}], [{n:"旅人",t:"フィールドで 光る 場所を 見かけたら、調べてみな。"},{n:"旅人",t:"ちょっとした“出来事”が あるかもしれん。"}] ]; return [intro].concat(lines[f%lines.length]); }
     function triggerFieldEvent(f){ if(!save.fieldEvent)save.fieldEvent={}; const key="f"+f;
       if(save.fieldEvent[key]){ runDialogue([{n:"ナビ",t:"…もう ここには 何も なさそう。"}]); return; }
@@ -1324,7 +1337,7 @@
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
     // ===== 街：施設＋石畳の十字路＋家＋木＋下の門→フィールド =====
-    const INTERACTABLES=new Set(["I","S","F","G","N","V","P","X","o","T","D","B","E","Q","Y","Z","W","L","M"]);
+    const INTERACTABLES=new Set(["I","S","F","G","N","V","P","X","o","T","D","B","E","Q","Y","Z","W","L","M","U"]);
     function scatterDeco(g,W,H,ch,n,rnd,sp){ let p=0,t=0; while(p<n&&t<n*12){ t++; const x=1+Math.floor(rnd()*(W-2)), y=1+Math.floor(rnd()*(H-2)); if(g[y][x]!=="g")continue; if(Math.abs(x-sp.x)<=1&&Math.abs(y-sp.y)<=1)continue; let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){ const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&INTERACTABLES.has(nb)){near=true;break;} } if(near)continue; g[y][x]=ch; p++; } }
     // 草地のうち 道(p)に隣接したマスを 目標地点の近くから探して ch を置く（＝必ず道から行ける）
     function placeAdjRoad(g,W,H,ch,tx,ty,used){ let best=null,bd=1e9; for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){ if(g[y][x]!=="g"||used[x+","+y])continue; let road=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]) if(g[y+dy]&&g[y+dy][x+dx]==="p"){road=true;break;} if(!road)continue; const d=Math.abs(x-tx)+Math.abs(y-ty); if(d<bd){bd=d;best=[x,y];} } if(best){ g[best[1]][best[0]]=ch; used[best[0]+","+best[1]]=1; } return best; }
@@ -1363,6 +1376,7 @@
       const used={};
       placeAdjRoad(g,W,H,"T",6,H-4,used);  // 街ゲート
       placeAdjRoad(g,W,H,"D",vx,3,used);   // ダンジョン洞窟
+      placeAdjRoad(g,W,H,"U",Math.floor(W/2),Math.floor(H/2),used); // フィールドの集落（届け物の届け先）
       // 池（層ごとに 位置・大きさ変化／道や入口を塞がない）
       const pw=2+Math.floor(rnd()*2), ph=2+Math.floor(rnd()*2), px=4+Math.floor(rnd()*14), py=5+Math.floor(rnd()*8);
       for(let y=py;y<py+ph;y++)for(let x=px;x<px+pw;x++){ if(g[y]&&g[y][x]==="g"){ let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&(nb==="p"||INTERACTABLES.has(nb)))near=true;} if(!near)g[y][x]="w"; } }
@@ -1419,7 +1433,8 @@
       if(area==="town"){ syncParty(); world.party.forEach(healFull); }
       else if(!world.party||world.party.length===0){ syncParty(); world.party.forEach(healFull); }
       busy=false; showWorld();
-      if(area==="town"){ maybeFloorStory(); if(save.delivery && save.delivery.to===floor) showToast("📨 配達先の街！ 村人に 話して 届けよう"); }
+      if(area==="town"){ maybeFloorStory(); if(floorFlow(floor)==="delivery"&&errandStage(floor)===2) showToast("📜 集落の礼状を 依頼主(案内人)に 渡そう"); }
+      if(area==="field" && floorFlow(floor)==="delivery"&&errandStage(floor)===1) showToast("📨 集落(🏚)に 荷物を 届けよう");
     }
     async function floorWarp(n){ save.floor=n; persist(); const t=document.getElementById("battle-trans"); if(t){ t.classList.remove("hidden","bt-out"); void t.offsetWidth; t.classList.add("bt-in"); await wait(420); } enterArea("town",n); if(t){ t.classList.remove("bt-in","bt-out"); t.classList.add("hidden"); }
     }
@@ -1442,8 +1457,8 @@
       }
       // インタラクト判定：通り抜け系(門/塔/出口)は乗ったタイル、固い建物/人は「隣接」で反応
       const tx=Math.floor(world.px/TS), ty=Math.floor(world.py/TS); const here=tileChar(tx,ty);
-      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす", P:"はなす", E:"しらべる", L:"とびらを あける", M:"たすける", W:"レバーを ひく", Q:"なぞを とく", Y:"通行料を はらう", H:"灯火を ともす" };
-      const WALK_ON=new Set(["B","X","E","M","W","Q","Y","H"]); const ADJACENT=new Set(["I","S","F","G","N","V","D","T","P","L"]);
+      const ctxMap={ I:"宿屋", S:"武器屋", F:"配合所", G:"ガチャ堂", D:"ダンジョンへ", B:"層ボスに いどむ", T:"街へ はいる", N:"はなす", V:"はなす", P:"はなす", U:"集落で はなす", E:"しらべる", L:"とびらを あける", M:"たすける", W:"レバーを ひく", Q:"なぞを とく", Y:"通行料を はらう", H:"灯火を ともす" };
+      const WALK_ON=new Set(["B","X","E","M","W","Q","Y","H"]); const ADJACENT=new Set(["I","S","F","G","N","V","D","T","P","L","U"]);
       let tc=null;
       if(WALK_ON.has(here)) tc=here;
       else for(const [dx,dy] of [[0,-1],[0,1],[-1,0],[1,0]]){ const cc=tileChar(tx+dx,ty+dy); if(ADJACENT.has(cc)){ tc=cc; break; } }
@@ -1469,8 +1484,9 @@
       else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に 話を 聞いて、依頼を 受けてから 挑もう。`} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に もどって『報告』しよう。道が ひらくはず！` } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
-      else if(c==="V"){ if(save.delivery && save.delivery.to===world.floor){ completeDelivery(); } else runDialogue(npcVillagerStory(world.floor)); }
+      else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
       else if(c==="P"){ travelerTalk(); }
+      else if(c==="U"){ hamletTalk(); }
       else if(c==="E"){ triggerFieldEvent(world.floor); }
       else if(c==="L"){ openLockedDoor(); }
       else if(c==="M"){ rescueEvent(); }
@@ -1579,6 +1595,7 @@
             wctx.fillStyle="#ffd24a"; wctx.fillRect(cxv-7,sy+11,3,3); wctx.fillRect(cxv+4,sy+11,3,3);      // 窓
             break; }
         case "B": arch("#c33","！"); break;
+        case "U": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-4,11,3,0,0,7); wctx.fill(); wctx.fillStyle="#8a6a44"; wctx.fillRect(sx+5,sy+14,TS-10,TS-16); wctx.fillStyle="#a4502e"; wctx.beginPath(); wctx.moveTo(sx+3,sy+15); wctx.lineTo(cxv,sy+5); wctx.lineTo(sx+TS-3,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#5a3a20"; wctx.fillRect(cxv-3,sy+TS-9,6,7); wctx.fillStyle="#ffe24a"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText("🏚",cxv,sy+10); break; } // 集落
         case "N": case "V": case "P": { const col=c==="N"?"#6ac0e0":(c==="V"?"#d0a060":"#e090b0"); wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-6,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,col); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffe24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",cxv,sy+9); break; }
         case "E": { const t2=(((tx*3+ty*5))%6); wctx.fillStyle="#ffe24a"; wctx.font="bold 16px sans-serif"; wctx.textAlign="center"; wctx.fillText("✦",cxv,sy+TS/2+6); wctx.fillStyle="rgba(255,226,74,0.25)"; wctx.beginPath(); wctx.arc(cxv,sy+TS/2,8+t2,0,7); wctx.fill(); break; }
         case "H": { wctx.fillStyle="#5a4a3a"; wctx.fillRect(cxv-2,sy+TS-12,4,11); wctx.fillStyle="#3a3030"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-12,5,3,0,0,7); wctx.fill(); const fl=((tx*5+ty*3)%3); wctx.fillStyle="#ff8a2a"; wctx.beginPath(); wctx.moveTo(cxv,sy+4-fl); wctx.quadraticCurveTo(cxv+5,sy+TS/2-2,cxv,sy+TS-13); wctx.quadraticCurveTo(cxv-5,sy+TS/2-2,cxv,sy+4-fl); wctx.fill(); wctx.fillStyle="#ffe24a"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS/2,2,4,0,0,7); wctx.fill(); break; } // 灯火
