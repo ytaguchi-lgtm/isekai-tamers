@@ -779,9 +779,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, fetchDone:{}, errand:{}, fuseUnlocked:false, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
+    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, fetchDone:{}, errand:{}, raid:{}, fuseUnlocked:false, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(!s.fetchDone)s.fetchDone={}; if(!s.errand)s.errand={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(!s.fetchDone)s.fetchDone={}; if(!s.errand)s.errand={}; if(!s.raid)s.raid={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -1253,13 +1253,19 @@
     function addRescue(f){ const p=questProg(f); const was=questDone(f); p.r+=1; persist(); if(p.accepted)afterQuest(f,was); }
     let toastTimer=null;
     function showToast(msg){ const t=document.getElementById("world-toast"); if(!t)return; t.textContent=msg; t.classList.remove("hidden"); if(toastTimer)clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),2600); }
+    // ボス戦“前”の固有シーン（層の主が立ちはだかる）
+    function bossIntroStory(f){ const L=loreFor(f), info=floorInfo(f);
+      if(f>=30) return [ {n:"ナビ",t:"塔頂の 扉の 奥…ついに、管理者の 影だ…！"}, {n:"管理者",t:"ここまで のぼってくるとは。…だが この塔は、たやすく 還さぬ。"} ];
+      const taunts=[ "逃げ場は ない…魔物もろとも 喰らい尽くす！", "ここまで 来たことは 褒めてやろう。だが ここで 終わりだ。", "下等な 調教師め…この層から 出られると 思うな！", "…ほう、面白い。我が力、味わうがいい。", "この層は わたしの ものだ。立ち去れ、さもなくば 砕く！" ];
+      return [ {n:"ナビ",t:`空気が ふるえる…！『${L.hunt}』を 束ねる “${info.town}の 層の主” が 現れた！`}, {n:"層の主",t:taunts[f%taunts.length]}, {n:"ナビ",t:`来るよ…！ みんな、${save.heroName||"テイマー"}を 守って！` } ]; }
     function bossClearStory(f){
       if(f>=30) return [ {n:"管理者",t:"……みごとだ。きみと 魔物の 絆が、わたしを 上回った。"},
         {n:"ナビ",t:"塔の てっぺんの 扉が ひらいた……！ 外の 光が さしこんでくる！"},
         {n:"ナビ",t:"やったね。きみは 塔を 制覇した、最強の 調教師だ。"},
         {n:"ナビ",t:"……でも、まだ 強くなれる。気が すむまで、この世界で 遊んでいこう。【完】"} ];
       const milestone={ 5:[{n:"ナビ",t:"5層 突破！ きみと 魔物たちの 連携、見違えたよ。"}], 10:[{n:"カイ",t:"…やるな。共闘も わるくなかったぜ。先で また 競争だ。"}], 15:[{n:"塔の声",t:"折り返しを 越えたか。…この先、塔は 牙を むくぞ。"}], 20:[{n:"カイ",t:"半分以上 来たな。お前と なら、頂上まで 行ける 気がしてきたよ。"}], 25:[{n:"ナビ",t:"あと 少し…！ ここまでの みんなの 想い、ぜんぶ のせていこう。"}] }[f];
-      const base=[ {n:"ナビ",t:`第${f}層の 層ボスを たおした……！ さすが、わたしの ${save.heroName||"テイマー"}！`}, {n:"ナビ",t:"上の層への 扉が ひらいたよ。HPも MPも 全回復。次の 街で 仕切り直そう。"} ];
+      const L=loreFor(f); const resolved={n:"ナビ",t:`これで『${L.hunt}』の 脅威も 去った。${floorInfo(f).town}に、平穏が もどるね。`};
+      const base=[ {n:"ナビ",t:`第${f}層の 層ボスを たおした……！ さすが、わたしの ${save.heroName||"テイマー"}！`}, resolved, {n:"ナビ",t:"上の層への 扉が ひらいたよ。HPも MPも 全回復。次の 街で 仕切り直そう。"} ];
       return milestone?milestone.concat(base):base;
     }
     function npcGuideStory(){ const f=world.floor; const p=questProg(f); const g=questGiver(f); const L=loreFor(f);
@@ -1306,6 +1312,7 @@
     // フィールドの集落(U)：delivery層の往復の受け渡し点。収集物はここで まとめて 手に入る。
     function hamletTalk(){ const f=world.floor; const cp=collectPlan(f), L=loreFor(f), flow=floorFlow(f), g=questGiver(f);
       if(!(flow==="delivery"&&cp)) return runDialogue([ {n:"集落の人",t:`ここは フィールドの ちいさな 集落だ。${L.hunt?`『${L.hunt}』が うろついて 物騒でね…。`:"気を つけて 旅を。"}`}, {n:"集落の人",t:"街の 人たちにも よろしくな。"} ]);
+      if(gridHas("R")) return runDialogue([ {n:"集落の人",t:`た、たすけて…！『${L.hunt}』に 囲まれてるんだ！`}, {n:"集落の人",t:"集落の まわりの 魔物を 追い払って くれ！ 話は それからだ！"} ]);
       if(!questProg(f).accepted) return runDialogue([{n:"集落の人",t:`${g}の 依頼を 受けてから また おいで。`}]);
       const st=errandStage(f);
       if(st===0) return runDialogue([{n:"集落の人",t:"街の『旅人』から 荷物を 預かってきて おくれ。話は それからだ。"}]);
@@ -1337,7 +1344,7 @@
     const wcanvas=document.getElementById("world-canvas"), wctx=wcanvas.getContext("2d");
 
     // ===== 街：施設＋石畳の十字路＋家＋木＋下の門→フィールド =====
-    const INTERACTABLES=new Set(["I","S","F","G","N","V","P","X","o","T","D","B","E","Q","Y","Z","W","L","M","U"]);
+    const INTERACTABLES=new Set(["I","S","F","G","N","V","P","X","o","T","D","B","E","Q","Y","Z","W","L","M","U","R"]);
     function scatterDeco(g,W,H,ch,n,rnd,sp){ let p=0,t=0; while(p<n&&t<n*12){ t++; const x=1+Math.floor(rnd()*(W-2)), y=1+Math.floor(rnd()*(H-2)); if(g[y][x]!=="g")continue; if(Math.abs(x-sp.x)<=1&&Math.abs(y-sp.y)<=1)continue; let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){ const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&INTERACTABLES.has(nb)){near=true;break;} } if(near)continue; g[y][x]=ch; p++; } }
     // 草地のうち 道(p)に隣接したマスを 目標地点の近くから探して ch を置く（＝必ず道から行ける）
     function placeAdjRoad(g,W,H,ch,tx,ty,used){ let best=null,bd=1e9; for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){ if(g[y][x]!=="g"||used[x+","+y])continue; let road=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]) if(g[y+dy]&&g[y+dy][x+dx]==="p"){road=true;break;} if(!road)continue; const d=Math.abs(x-tx)+Math.abs(y-ty); if(d<bd){bd=d;best=[x,y];} } if(best){ g[best[1]][best[0]]=ch; used[best[0]+","+best[1]]=1; } return best; }
@@ -1376,7 +1383,10 @@
       const used={};
       placeAdjRoad(g,W,H,"T",6,H-4,used);  // 街ゲート
       placeAdjRoad(g,W,H,"D",vx,3,used);   // ダンジョン洞窟
-      placeAdjRoad(g,W,H,"U",Math.floor(W/2),Math.floor(H/2),used); // フィールドの集落（届け物の届け先）
+      const uPos=placeAdjRoad(g,W,H,"U",Math.floor(W/2),Math.floor(H/2),used); // フィールドの集落（届け物の届け先）
+      // 集落襲撃：delivery層は 集落の まわりに 襲撃魔物(R)を 配置（討伐＝追い払うと 届け物が進む）。撃退済みは 復活しない
+      if(uPos && floorFlow(floor)==="delivery"){ const cleared=(save.raid&&save.raid[floor]&&save.raid[floor].cleared)||{}; let placed=0; const around=[[-1,0],[1,0],[0,-1],[0,1],[-2,0],[2,0],[0,-2],[0,2],[-1,-1],[1,1],[1,-1],[-1,1]];
+        for(const[dx,dy] of around){ if(placed>=3)break; const x=uPos[0]+dx,y=uPos[1]+dy; if(x>2&&y>2&&x<W-3&&y<H-3&&g[y][x]==="g"&&!cleared[x+","+y]){ g[y][x]="R"; placed++; } } }
       // 池（層ごとに 位置・大きさ変化／道や入口を塞がない）
       const pw=2+Math.floor(rnd()*2), ph=2+Math.floor(rnd()*2), px=4+Math.floor(rnd()*14), py=5+Math.floor(rnd()*8);
       for(let y=py;y<py+ph;y++)for(let x=px;x<px+pw;x++){ if(g[y]&&g[y][x]==="g"){ let near=false; for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nb=g[y+dy]&&g[y+dy][x+dx]; if(nb&&(nb==="p"||INTERACTABLES.has(nb)))near=true;} if(!near)g[y][x]="w"; } }
@@ -1475,6 +1485,7 @@
       if(here==="C"){ collectChest(tx,ty); }
       else if(here==="K"){ collectQuestChest(tx,ty); }
       else if(here==="k"){ pickupKey(tx,ty); }
+      else if(here==="R"){ startRaid(tx,ty); }
       const c=here;
       // エンカウント（ダンジョンの床 / フィールドの草原）
       if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.8){ world.dist=0; if(Math.random()<0.10) startEncounter(false); } } }
@@ -1488,7 +1499,7 @@
       else if(c==="G"){ showGacha(); }
       else if(c==="D"){ if(!world.party||world.party.length===0){ alert("≡メニューの『へんせい』で 出撃メンバーを えらんでください"); return; } enterArea("dungeon", world.floor); }
       else if(c==="T"){ enterArea("town", world.floor); }
-      else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に 話を 聞いて、依頼を 受けてから 挑もう。`} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に もどって『報告』しよう。道が ひらくはず！` } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) startEncounter(true); }
+      else if(c==="B"){ const f=world.floor; const p=questProg(f); if(!p.accepted){ runDialogue([ {n:"ナビ",t:"まだ この層の 依頼を 受けていないよ。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に 話を 聞いて、依頼を 受けてから 挑もう。`} ]); return; } if(!questDone(f)){ runDialogue([ {n:"ナビ",t:"扉が 固く 閉ざされてる…！ まだ 依頼の 試練が のこってるよ。"}, {n:"ナビ",t:"【のこり】\n"+questText(f)} ]); return; } if(!p.reported){ runDialogue([ {n:"ナビ",t:"依頼は 達成した…！ でも 扉は まだ 閉じてる。"}, {n:"ナビ",t:`街の『${questGiver(f)}』に もどって『報告』しよう。道が ひらくはず！` } ]); return; } if(confirm(`${floorInfo(f).name} の 層ボスに いどみますか？`)) runDialogue(bossIntroStory(f), ()=>startEncounter(true)); }
       else if(c==="X"){ enterArea("field", world.floor); }
       else if(c==="N"){ runDialogue(npcGuideStory()); }
       else if(c==="V"){ runDialogue(npcVillagerStory(world.floor)); }
@@ -1603,6 +1614,7 @@
             wctx.fillStyle="#ffd24a"; wctx.fillRect(cxv-7,sy+11,3,3); wctx.fillRect(cxv+4,sy+11,3,3);      // 窓
             break; }
         case "B": arch("#c33","！"); break;
+        case "R": { wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,8,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2,8,"#c0402e"); wctx.fillStyle="#ffe24a"; wctx.beginPath(); wctx.arc(cxv-3,sy+TS/2-1,1.6,0,7); wctx.arc(cxv+3,sy+TS/2-1,1.6,0,7); wctx.fill(); wctx.fillStyle="#fff"; wctx.font="bold 11px sans-serif"; wctx.textAlign="center"; wctx.fillText("‼",cxv,sy+8); break; } // 集落を襲う魔物
         case "U": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-4,11,3,0,0,7); wctx.fill(); wctx.fillStyle="#8a6a44"; wctx.fillRect(sx+5,sy+14,TS-10,TS-16); wctx.fillStyle="#a4502e"; wctx.beginPath(); wctx.moveTo(sx+3,sy+15); wctx.lineTo(cxv,sy+5); wctx.lineTo(sx+TS-3,sy+15); wctx.closePath(); wctx.fill(); wctx.fillStyle="#5a3a20"; wctx.fillRect(cxv-3,sy+TS-9,6,7); wctx.fillStyle="#ffe24a"; wctx.font="bold 9px sans-serif"; wctx.textAlign="center"; wctx.fillText("🏚",cxv,sy+10); break; } // 集落
         case "N": case "V": case "P": { const col=c==="N"?"#6ac0e0":(c==="V"?"#d0a060":"#e090b0"); wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-6,7,3,0,0,7); wctx.fill(); blob(cxv,sy+TS/2+1,7,col); blob(cxv,sy+TS/2-3,4,"#f0d8b0"); wctx.fillStyle="#ffe24a"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("!",cxv,sy+9); break; }
         case "E": { const t2=(((tx*3+ty*5))%6); wctx.fillStyle="#ffe24a"; wctx.font="bold 16px sans-serif"; wctx.textAlign="center"; wctx.fillText("✦",cxv,sy+TS/2+6); wctx.fillStyle="rgba(255,226,74,0.25)"; wctx.beginPath(); wctx.arc(cxv,sy+TS/2,8+t2,0,7); wctx.fill(); break; }
@@ -1841,7 +1853,7 @@
       drops.forEach(d=>save.inventory.push(d)); save.gold=(save.gold||0)+gold; save.gems=(save.gems||0)+gemGain; handleRecruits(recruits); if(!boss && !run.guardian) addHunt(run.floor, run.enemies.length);
       // 特定モンスター限定ドロップの収集物（その層の対象種を倒すと加算）
       const _cp=collectPlan(run.floor); let _drop=0; if(_cp&&_cp.source==="drop"&&questProg(run.floor).accepted&&!boss&&!run.guardian){ run.enemies.forEach(e=>{ if(e.speciesId===_cp.species){ addCollect(run.floor); _drop++; } }); }
-      if(run.guardian)onGuardianWin(); persist();
+      if(run.guardian)onGuardianWin(); if(world&&world.raidPos)onRaidWin(); persist();
       let msg=`てきを たおした！ けいけんち+${exp} ／ 💰+${gold}G${gemGain?` ／ 💎+${gemGain}`:""}`;
       if(_drop)msg+=`<br><span class="scout">✨『${loreFor(run.floor).coll}』を ${_drop} 入手！（収集依頼）</span>`;
       if(run.guardian)msg+=`<br><span class="scout">🗝️ 守護者を 倒した！ 奥の 扉が 開いた！</span>`;
@@ -1851,7 +1863,7 @@
       log(msg); await wait(1150);
       if(boss) runDialogue(bossClearStory(world?world.floor:save.floor), ()=>onBossCleared()); else returnToField();
     }
-    function returnToField(){ busy=false; if(world)world.grace=3; updateWorldHead(); showWorld(); }
+    function returnToField(){ busy=false; if(world){ world.grace=3; world.raidPos=null; } updateWorldHead(); showWorld(); }
     function onBossCleared(){ const cleared=world?world.floor:(save.floor||1); save.floor=cleared+1; if(cleared>(save.bestDepth||0))save.bestDepth=cleared; const gemReward=8+cleared; save.gems=(save.gems||0)+gemReward; persist(); SFX.fanfare&&SFX.fanfare();
       pendingResult=()=>{ enterArea("town", save.floor); };
       el.result.classList.remove("hidden"); el.resultMsg.textContent=`🏯 第${cleared}層 突破！`;
@@ -1892,6 +1904,8 @@
       if(gridHas("W")||gridHas("H")){ persist(); runDialogue([{n:"ナビ",t:torch?"灯火が ともった…！ でも まだ。もう ひとつ あるみたい。":"カチッ…！ でも まだ 開かない。レバーは もう ひとつ あるみたい。"}]); }
       else { for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); showToast(torch?"🔥 灯火が すべて ともった！":"🎚️ 奥の扉が 開いた！"); runDialogue([{n:"ナビ",t:"ゴゴゴ…！ 奥の 扉が 開いた！ 主のもとへ いこう。"}]); } }
     function startGuardian(tx,ty){ world.guardianPos={x:tx,y:ty}; startEncounter(false,true); }
+    function startRaid(tx,ty){ world.raidPos={x:tx,y:ty}; SFX.encounter&&SFX.encounter(); startEncounter(false,false); } // 集落を襲う魔物との戦い（通常戦＝討伐にカウント）
+    function onRaidWin(){ const f=world.floor; const rp=world.raidPos; if(rp){ if(world.grid[rp.y]&&world.grid[rp.y][rp.x]==="R")world.grid[rp.y][rp.x]="."; if(!save.raid)save.raid={}; if(!save.raid[f])save.raid[f]={cleared:{}}; if(!save.raid[f].cleared)save.raid[f].cleared={}; save.raid[f].cleared[rp.x+","+rp.y]=1; world.raidPos=null; persist(); } }
     function makeGuest(){ try{ const ps=world.party||[]; const avg=ps.length?Math.round(ps.reduce((s,a)=>s+a.level,0)/ps.length):10; const tm=newMember("navi_a2",Math.max(8,avg+1)); const a=makeAlly(tm); a.uid="guest_kai"; a.name="カイの相棒"; a.guest=true; return a; }catch(e){ return null; } }
     async function guestAct(u){ if(u.hp<=0){ run.turnIdx++; nextTurn(); return; } const targets=run.enemies.filter(e=>e.hp>0); if(!targets.length){ run.turnIdx++; nextTurn(); return; } const tgt=targets[Math.floor(Math.random()*targets.length)]; const ti=run.enemies.indexOf(tgt); const r=resolveDamage(u,tgt,{kind:"phys",power:1.1}); tgt.hp-=r.dmg; shakeEnemy(ti); flashEnemy(ti,r.crit?"crit":"phys"); (r.crit?SFX.crit:SFX.hit)&&(r.crit?SFX.crit():SFX.hit()); renderBattle(); log(`<span class="scout">🤝 ${u.name}の こうげき！</span> ${enLabel(tgt)}に ${r.dmg}！`); await wait(720); if(allEnemiesDead()){ await onBattleWon(); return; } run.turnIdx++; nextTurn(); }
     const RIDDLES=[ {q:"パンは パンでも たべられない パンは？",a:["フライパン","ふらいぱん"]}, {q:"つめたくて しろい、空から ふる ものは？",a:["ゆき","雪","スノー"]}, {q:"夜空で ひかる、ちいさな ひかりは？",a:["ほし","星","スター"]}, {q:"1年で いちばん さむい きせつは？",a:["ふゆ","冬"]}, {q:"うみに いて、ハサミを もつ いきものは？",a:["かに","カニ","蟹"]}, {q:"あかくて まるい、木に なる くだもの（りんご以外で 一つ）…ヒント:さるが すき",a:["もも","桃"]} ];
