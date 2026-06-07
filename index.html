@@ -779,9 +779,9 @@
     const SAVE_KEY="isekai_dungeon_m6"; let _seq=0;
     function newUid(p){ _seq+=1; return p+Date.now().toString(36)+"_"+_seq+Math.floor(Math.random()*1000); }
     function newMember(s,lv){ lv=lv||1; const m={ uid:newUid("m"), speciesId:s, level:lv, exp:0, equip:{weapon:null,armor:null,acc:null}, book:null, skills:(SPECIES[s].skills||[]).slice(), plus:{atk:0,def:0,hp:0,mp:0} }; learnNewSkills(m); return m; }
-    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
+    function defaultSave(){ const s={ box:[], partyUids:[], inventory:[], bestDepth:0, gems:50, gold:120, muted:false, floor:1, introSeen:false, consumables:{potion:3,ether:1}, avatar:"hero", avatars:["hero"], storySeen:{}, seen:{}, quest:{}, navi:null, fieldEvent:{}, heroName:"テイマー", delivery:null, deliveryDone:{}, fetchDone:{}, fuseUnlocked:false, dstate:{} }; s.inventory.push(makeItem("woodSword")); return s; }
     let save=loadSave();
-    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
+    function loadSave(){ try{ const raw=localStorage.getItem(SAVE_KEY); if(raw){ const s=JSON.parse(raw); if(s.gems==null)s.gems=0; if(s.gold==null)s.gold=120; if(s.muted==null)s.muted=false; if(s.floor==null)s.floor=1; if(s.introSeen==null)s.introSeen=false; if(!s.consumables)s.consumables={potion:3,ether:1}; if(!s.avatar)s.avatar="hero"; if(!s.avatars)s.avatars=["hero"]; if(!s.storySeen)s.storySeen={}; if(!s.seen){ s.seen={}; (s.box||[]).forEach(m=>s.seen[m.speciesId]=true); } if(!s.quest)s.quest={}; if(s.navi===undefined)s.navi=null; if(!s.fieldEvent)s.fieldEvent={}; if(!s.heroName)s.heroName="テイマー"; if(s.delivery===undefined)s.delivery=null; if(!s.deliveryDone)s.deliveryDone={}; if(!s.fetchDone)s.fetchDone={}; if(s.fuseUnlocked===undefined)s.fuseUnlocked=(s.floor>=5); if(!s.dstate)s.dstate={}; s.avatars=(s.avatars||["hero"]).filter(k=>AVATARS[k]); if(!s.avatars.includes("hero"))s.avatars.unshift("hero"); if(!AVATARS[s.avatar])s.avatar="hero"; return s; } }catch(e){} return defaultSave(); }
     function markSeen(sid){ if(sid&&save&&save.seen&&!save.seen[sid]){ save.seen[sid]=true; } }
     function persist(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(save)); }catch(e){} }
     function findMember(uid){ return save.box.find(m=>m.uid===uid); }
@@ -1245,11 +1245,25 @@
       const flavor=[ `${fi.field}の 奥に 何か いるって 噂だ。気を つけな。`, `塔は 登るほど 別世界さ。あんた、ここまで よく 来たな。`, `宿屋で 休めば HP・MP 全回復。むりは しなさんな。`, `上の層から 来た 旅人が、すごい 配合の 魔物を 見せてくれたよ。`, `早く 外の 世界に 帰りたいね。…あんたなら、やれるかもな。`, `この街の 子も ダンジョンに 憧れてる。あんたは 憧れの テイマーさ。` ];
       return [ {n:"村人",t:st}, {n:"村人",t:flavor[(f*2+ (p.reported?5:f))%flavor.length]} ];
     }
+    // 層ごとの“流れの型”（隣り合う層で必ず変わる）：delivery=届け物で収集物が手に入る / fetch=助言＋支度 / lore=情報
+    function floorFlow(f){ if(f<2)return "lore"; return ["delivery","fetch","lore"][(f-2)%3]; }
     function travelerTalk(){ const f=world.floor;
-      if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。街の人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層の 街へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
-      if(f>=2 && !(save.deliveryDone&&save.deliveryDone[f])){ if(confirm(`旅人「下の 第${f-1}層の 街へ、この手紙を 届けてほしいんだ。引き受けてくれるかい？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast("📨 おつかいを 引き受けた（第"+(f-1)+"層の街へ）"); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層の 街で 渡してくれ。お礼は たっぷり 用意してるよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
+      if(save.delivery){ const to=save.delivery.to; if(to===f) return runDialogue([{n:"旅人",t:"…あれ、もう 着いてた？ 受取人は この街の 人だよ。村人に 話しかけてみて。"}]); return runDialogue([{n:"旅人",t:`第${to}層《${floorInfo(to).town}》の 人へ 届け物、頼んだよ。≡システムの「層を移動」で 行けるはず。`}]); }
+      const flow=floorFlow(f), L=loreFor(f), hasColl=questsForFloor(f).some(q=>q.type==="collect");
+      // ① 届け物＝この層の収集物が報酬で手に入る（物語に統合）
+      if(flow==="delivery" && f>=2 && hasColl && !(save.deliveryDone&&save.deliveryDone[f])){
+        if(confirm(`旅人「下の 第${f-1}層《${floorInfo(f-1).town}》の 知り合いへ 届け物を 頼みたい。\nお礼に、この層で 探してる『${L.coll}』を ひとつ ゆずるよ。引き受ける？」\n\n[OK] 引き受ける／[キャンセル] やめる`)){ save.delivery={to:f-1,from:f}; persist(); showToast(`📨 おつかいを 引き受けた（第${f-1}層へ）`); runDialogue([{n:"旅人",t:`恩に着る！ 第${f-1}層《${floorInfo(f-1).town}》で 渡して くれ。戻ったら 『${L.coll}』を 渡すよ。`}]); } else runDialogue(npcTravelerStory(f)); return; }
+      // ② お使い前提の助言＝支度の品をくれる（1回）
+      if(flow==="fetch" && !(save.fetchDone&&save.fetchDone[f])){
+        if(!save.fetchDone)save.fetchDone={}; save.fetchDone[f]=true; save.consumables.potion=(save.consumables.potion||0)+1; persist(); showToast("🎒 やくそう×1 を もらった");
+        return runDialogue([ {n:"旅人",t:`あんた、これから『${L.hunt}』と やり合うのかい。無茶を するなあ。`}, {n:"旅人",t:`これ、やくそうだ。持っていきな。${hasColl?`『${L.coll}』は ダンジョンの 宝箱に あるはずだ。`:"気を つけてな。"}`} ]); }
+      // ③ それ以外＝この層ならではの 情報
       runDialogue(npcTravelerStory(f)); }
-    function completeDelivery(){ const floor=world.floor; const gem=6+floor, gold=80+floor*10; const from=save.delivery.from; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; if(!save.deliveryDone)save.deliveryDone={}; save.deliveryDone[from]=true; save.delivery=null; persist(); showToast("📨 配達 完了！"); runDialogue([ {n:"村人",t:`おや、第${from}層からの 届け物かい？ わざわざ ありがとうね。`}, {n:"村人",t:`これは お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ]); }
+    function completeDelivery(){ const to=world.floor; const from=save.delivery.from; const Lf=loreFor(from); const fromHasColl=questsForFloor(from).some(q=>q.type==="collect");
+      const gem=3+Math.floor(from/2), gold=40+from*8; save.gems=(save.gems||0)+gem; save.gold=(save.gold||0)+gold; if(!save.deliveryDone)save.deliveryDone={}; save.deliveryDone[from]=true; save.delivery=null; persist();
+      const lines=[ {n:"村人",t:`第${from}層《${floorInfo(from).town}》からの 届け物だね。わざわざ ありがとう。`}, {n:"村人",t:`お礼だよ、受け取って。（💎+${gem}　💰+${gold}）`} ];
+      if(fromHasColl){ const acc=questProg(from).accepted; lines.push({n:"村人",t:`それと これ——${floorInfo(from).town}の 旅人から「渡してくれ」と。第${from}層で 探してた『${Lf.coll}』だよ。`}); if(acc){ addCollect(from); lines.push({n:"ナビ",t:`『${Lf.coll}』を ひとつ 入手！ 第${from}層の 依頼に カウントされたよ（残りは ダンジョンの 宝箱で）。`}); } else { lines.push({n:"ナビ",t:`『${Lf.coll}』を 受け取った。第${from}層で 依頼を 受けたら 役に立つよ。`}); } }
+      showToast("📨 配達 完了！"); runDialogue(lines); }
     function npcTravelerStory(f){ const L=loreFor(f); const intro={n:"旅人",t:`この層の『${L.hunt}』は 厄介だぜ。${L.coll?`だが『${L.coll}』が 手に入るなら、挑む 価値は ある。`:`油断せず いけよ。`}`}; const lines=[ [{n:"旅人",t:"おれも テイマーさ。……でも もう ここで 足踏みして 長くてね。"},{n:"旅人",t:"ガチャ堂の 噂、聞いたか？ ごく稀に 伝説級の 相棒が 来るらしいぜ。"}], [{n:"旅人",t:"配合は 奥が 深い。同じ系統・属性を 重ねると、化けることが ある。"},{n:"旅人",t:"色々 試してみな。思わぬ 一体が 生まれるぜ。"}], [{n:"旅人",t:"フィールドで 光る 場所を 見かけたら、調べてみな。"},{n:"旅人",t:"ちょっとした“出来事”が あるかもしれん。"}] ]; return [intro].concat(lines[f%lines.length]); }
     function triggerFieldEvent(f){ if(!save.fieldEvent)save.fieldEvent={}; const key="f"+f;
       if(save.fieldEvent[key]){ runDialogue([{n:"ナビ",t:"…もう ここには 何も なさそう。"}]); return; }
