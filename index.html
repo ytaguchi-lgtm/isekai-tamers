@@ -743,7 +743,7 @@
     const SELL_VALUE = { common:15, rare:60, epic:180 }; // ゴールド
     function sellValue(it){ return SELL_VALUE[it.tier]||10; }
     const MAX_SKILLS=4, MAX_PARTY=3, MAX_BOX=16, PULL1_COST=30, PULL10_COST=270, FUSE_MIN_LV=10;
-    function effLabel(e){ return ({crit:"ときどき会心(2倍)",guard:"被ダメ20%減",drain:"与ダメの30%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回",dodge:"22%で 攻撃を かわす",manaflow:"毎ターン MP+5",berserk:"ピンチほど 攻撃UP(最大+60%)"})[e]||""; }
+    function effLabel(e){ return ({crit:"ときどき会心(1.8倍)",guard:"被ダメ15%減",drain:"与ダメの20%吸収",regen:"毎ターン すこし回復",twin:"こうげき2回(2発目 弱)",dodge:"15%で 攻撃を かわす",manaflow:"毎ターン MP+4",berserk:"ピンチほど 攻撃UP(最大+40%)"})[e]||""; }
     function tierClass(t){ return t==="epic"?"epic":(t==="rare"?"rare":""); }
 
     /* 能力計算 */
@@ -1745,15 +1745,15 @@
       if(spec.kind==="mag") base=Math.round(aAtk*spec.power)+(spec.flat||0)-Math.floor(dDef*0.25);
       else base=Math.round(aAtk*spec.power)-Math.floor(dDef*0.5);
       if(base<1)base=1; let dmg=base+(Math.floor(Math.random()*5)-2); if(dmg<1)dmg=1; let crit=false;
-      if(a.effects&&a.effects.includes("berserk")&&a.maxHp){ dmg=Math.round(dmg*(1+(1-Math.max(0,a.hp)/a.maxHp)*0.6)); }
-      if(a.effects&&a.effects.includes("crit")&&Math.random()<0.18){dmg*=2;crit=true;}
-      if(d.effects&&d.effects.includes("guard"))dmg=Math.ceil(dmg*0.8);
+      if(a.effects&&a.effects.includes("berserk")&&a.maxHp){ dmg=Math.round(dmg*(1+(1-Math.max(0,a.hp)/a.maxHp)*0.4)); }
+      if(a.effects&&a.effects.includes("crit")&&Math.random()<0.13){dmg=Math.round(dmg*1.8);crit=true;}
+      if(d.effects&&d.effects.includes("guard"))dmg=Math.ceil(dmg*0.85);
       if(d.guardUp)dmg=Math.ceil(dmg*0.7); if(d.defending)dmg=Math.ceil(dmg/2);
-      if(d.effects&&d.effects.includes("dodge")&&Math.random()<0.22){ dmg=0; crit=false; }
+      if(d.effects&&d.effects.includes("dodge")&&Math.random()<0.15){ dmg=0; crit=false; }
       return {dmg,crit}; }
     function skillSpec(sk){ return sk.type==="magic"?{kind:"mag",power:sk.power,flat:sk.flat}:{kind:"phys",power:sk.power}; }
-    function applyDrain(me,dmg){ if(me.effects.includes("drain")){ const h=Math.max(1,Math.floor(dmg*0.3)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
-    function regenTick(me){ if(me.effects.includes("manaflow")&&me.hp>0&&me.mp<me.maxMp){ me.mp=Math.min(me.maxMp,me.mp+5); } if(me.effects.includes("regen")&&me.hp>0&&me.hp<me.maxHp){ const h=Math.max(1,Math.ceil(me.maxHp*0.06)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
+    function applyDrain(me,dmg){ if(me.effects.includes("drain")){ const h=Math.max(1,Math.floor(dmg*0.2)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
+    function regenTick(me){ if(me.effects.includes("manaflow")&&me.hp>0&&me.mp<me.maxMp){ me.mp=Math.min(me.maxMp,me.mp+4); } if(me.effects.includes("regen")&&me.hp>0&&me.hp<me.maxHp){ const h=Math.max(1,Math.ceil(me.maxHp*0.045)); me.hp=Math.min(me.maxHp,me.hp+h); return h; } return 0; }
     function regenPre(rg){ return rg?`<span class="heal">🌿 リジェネ ${rg} かいふく</span><br>`:""; }
 
     /* 行動順（すばやさ＝初期値順のイニシアチブ） */
@@ -1791,7 +1791,7 @@
       if(action==="defend"){ busy=true; me.defending=true; renderBattle(); log(`${me.name}は みを まもっている！`); await wait(600); afterAct(); return; }
       if(action==="attack"){ const ti=await pickTarget("enemy"); if(ti==null){ showCommands(); el.turnHint.innerHTML=`▶ ${me.name} の ばん`; return; }
         busy=true; const tgt=run.enemies[ti]; const hits=me.effects.includes("twin")?2:1; let total=0,crit=false;
-        for(let h=0;h<hits;h++){ if(tgt.hp<=0)break; const r=resolveDamage(me,tgt,{kind:"phys",power:h===0?1:0.7}); tgt.hp-=r.dmg; total+=r.dmg; if(r.crit)crit=true; shakeEnemy(ti); flashEnemy(ti,r.crit?"crit":"phys"); }
+        for(let h=0;h<hits;h++){ if(tgt.hp<=0)break; const r=resolveDamage(me,tgt,{kind:"phys",power:h===0?1:0.5}); tgt.hp-=r.dmg; total+=r.dmg; if(r.crit)crit=true; shakeEnemy(ti); flashEnemy(ti,r.crit?"crit":"phys"); }
         (crit?SFX.crit:SFX.hit)&&(crit?SFX.crit():SFX.hit()); renderBattle();
         let msg=`${me.name}の こうげき！ ${hits>1?`<span class="crit">2かい こうげき！</span> `:""}${crit?`<span class="crit">かいしん！</span> `:""}${enLabel(tgt)}に ${total} の ダメージ！`;
         const dh=applyDrain(me,total); if(dh){renderBattle();msg+=`<br><span class="heal">${dh} HPを すいとった！</span>`;}
