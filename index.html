@@ -1388,6 +1388,8 @@
     function seededRng(seed){ let s=(seed>>>0)||1; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
     // ボス到達は『依頼を達成→依頼主に報告』で物語に沿って開通（別途ランダムな鍵パズルは廃止＝整合重視）
     function bossPattern(f){ return "report"; }
+    // 道中ギミック（イベント＝依頼とは独立。ボス部屋手前の内部扉を 鍵/レバーで開けて通行）
+    function dungeonGimmick(f){ if(f<=2)return "none"; return ["key","lever","none"][f%3]; }
     function roomEntrance(g,r){ for(let y=r.y;y<r.y+r.h;y++){ if(g[y]&&g[y][r.x-1]===".")return[r.x-1,y]; if(g[y]&&g[y][r.x+r.w]===".")return[r.x+r.w,y]; } for(let x=r.x;x<r.x+r.w;x++){ if(g[r.y-1]&&g[r.y-1][x]===".")return[x,r.y-1]; if(g[r.y+r.h]&&g[r.y+r.h][x]===".")return[x,r.y+r.h]; } return null; }
     function buildDungeon(floor){
       // 層ごとに 構成が変わる迷宮（シード生成）。チェーン連結＝必ず到達可能。ボス部屋は層により施錠(L=鍵で開く)
@@ -1408,16 +1410,20 @@
       g[c0.y][c0.x]="X"; g[cl.y][cl.x]="B";
       const mids=R.slice(1,R.length-1); const pick=a=>a[Math.floor(rnd()*a.length)];
       const r0c=cen(r0); g[r0c.y][r0c.x]="X"; // 念のため入口
-      // 中部屋を順に使って 確実に配置（収集専用宝箱K → 通常宝箱C → 救出M）
+      // 道中ギミック（イベントとは独立）：ボス部屋の手前を 内部扉Lで施錠し、鍵/レバーで開ける
+      const gim=dungeonGimmick(floor); let doorOn=false;
+      if(gim!=="none"){ const e=roomEntrance(g,rl); if(e){ g[e[1]][e[0]]="L"; doorOn=true; } }
+      // 中部屋を順に使って 確実に配置（鍵/レバー → 収集宝箱K → 通常宝箱C → 救出M）
       let mi=0; const useMid=(ch)=>{ while(mi<mids.length){ const c=cen(mids[mi]); mi++; if(g[c.y]&&g[c.y][c.x]==="."){ g[c.y][c.x]=ch; return true; } } return false; };
+      if(doorOn){ useMid(gim==="key"?"k":"W"); } // 開けるための 鍵(k) か レバー(W) を 扉より手前(中部屋)に
       const cp=collectPlan(floor);
-      if(cp && cp.source==="chest"){ for(let i=0;i<cp.n;i++) useMid("K"); } // 収集専用宝箱（その層の収集物）
-      for(let i=0;i<2;i++) useMid("C"); // 通常宝箱（金/ジェム/装備のいずれか1つ）
+      if(cp && cp.source==="chest"){ for(let i=0;i<cp.n;i++) useMid("K"); } // 収集専用宝箱
+      for(let i=0;i<2 && mi<mids.length;i++) useMid("C"); // 通常宝箱（残り部屋ぶん）
       if(floorHasRescue(floor)) useMid("M");
       // 岩（部屋の内側だけ＝通路を塞がない）
       const nrock=3+Math.floor(rnd()*5); for(let k=0;k<nrock;k++){ const rr=pick(R); const x=rr.x+Math.floor(rnd()*rr.w), y=rr.y+Math.floor(rnd()*rr.h); let ok=g[y][x]==="."; for(let dy=-1;dy<=1&&ok;dy++)for(let dx=-1;dx<=1;dx++){ if(!(g[y+dy]&&g[y+dy][x+dx]===".")){ok=false;break;} } if(ok)g[y][x]="r"; } // 8近傍すべて床＝完全内部だけ（割断点を避ける）
       // 開封済み(宝箱/扉/救出)は復活させない
-      const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x],k=x+","+y; if(c==="C"&&st.chest&&st.chest[k])g[y][x]="."; else if(c==="K"&&st.qchest&&st.qchest[k])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if((c==="W"||c==="H")&&st.leverpos&&st.leverpos[k])g[y][x]="."; else if(c==="Z"&&st.guardian)g[y][x]="."; else if(c==="Q"&&st.riddle)g[y][x]="."; else if(c==="Y"&&st.toll)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
+      const st=(save.dstate&&save.dstate[floor])||{}; for(let y=0;y<H;y++)for(let x=0;x<W;x++){ const c=g[y][x],k=x+","+y; if(c==="C"&&st.chest&&st.chest[k])g[y][x]="."; else if(c==="K"&&st.qchest&&st.qchest[k])g[y][x]="."; else if(c==="k"&&st.keytaken&&st.keytaken[k])g[y][x]="."; else if(c==="L"&&st.door)g[y][x]="."; else if((c==="W"||c==="H")&&st.leverpos&&st.leverpos[k])g[y][x]="."; else if(c==="Z"&&st.guardian)g[y][x]="."; else if(c==="Q"&&st.riddle)g[y][x]="."; else if(c==="Y"&&st.toll)g[y][x]="."; else if(c==="M"&&st.resc)g[y][x]="."; }
       return {grid:g,W,H,spawn:cen(r0)};
     }
     function syncParty(){ world.party=save.partyUids.map(u=>makeAlly(findMember(u))).filter(Boolean); }
@@ -1468,6 +1474,7 @@
       if(newCtx!==actionCtx){ actionCtx=newCtx; const ab=document.getElementById("world-action"); if(actionCtx){ ab.textContent=actionCtx; ab.classList.remove("hidden"); } else ab.classList.add("hidden"); }
       if(here==="C"){ collectChest(tx,ty); }
       else if(here==="K"){ collectQuestChest(tx,ty); }
+      else if(here==="k"){ pickupKey(tx,ty); }
       const c=here;
       // エンカウント（ダンジョンの床 / フィールドの草原）
       if(world.area==="dungeon" && c==="."){ if(world.grace>0){ world.grace-=moved/TS; } else { world.dist+=moved; if(world.dist>TS*1.8){ world.dist=0; if(Math.random()<0.10) startEncounter(false); } } }
@@ -1569,6 +1576,7 @@
         case ".": { wctx.fillStyle="#332e48"; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="#3e3954"; const s2=8; for(let yy=0;yy<TS;yy+=s2){ const off=((yy/s2)%2)*(s2/2); for(let xx=-off;xx<TS;xx+=s2){ wctx.fillRect(sx+xx+1,sy+yy+1,s2-2,s2-2); } } break; }
         case "s": { wctx.fillStyle=th.s; wctx.fillRect(sx,sy,TS,TS); wctx.fillStyle="rgba(0,0,0,0.06)"; wctx.fillRect(sx+(rb(0)%TS),sy+(rb(1)%TS),2,2); wctx.fillRect(sx+(rb(2)%TS),sy+(rb(3)%TS),2,2); break; }
         case "C": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,9,3,0,0,7); wctx.fill(); wctx.fillStyle="#7a4a20"; wctx.fillRect(sx+7,sy+13,TS-14,TS-16); wctx.fillStyle="#9a6230"; wctx.fillRect(sx+7,sy+10,TS-14,6); wctx.fillStyle="#ffd24a"; wctx.fillRect(sx+7,sy+15,TS-14,2); wctx.fillRect(cxv-1,sy+13,2,5); break; }
+        case "k": { wctx.fillStyle="rgba(0,0,0,0.2)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,6,2,0,0,7); wctx.fill(); wctx.strokeStyle="#ffd24a"; wctx.lineWidth=2.5; wctx.beginPath(); wctx.arc(cxv-3,sy+TS/2-2,4,0,7); wctx.moveTo(cxv,sy+TS/2-1); wctx.lineTo(cxv+7,sy+TS/2+5); wctx.moveTo(cxv+5,sy+TS/2+3); wctx.lineTo(cxv+8,sy+TS/2+3); wctx.stroke(); break; } // 鍵
         case "K": { wctx.fillStyle="rgba(0,0,0,0.25)"; wctx.beginPath(); wctx.ellipse(cxv,sy+TS-5,9,3,0,0,7); wctx.fill(); wctx.fillStyle="#caa01e"; wctx.fillRect(sx+7,sy+13,TS-14,TS-16); wctx.fillStyle="#ffd24a"; wctx.fillRect(sx+7,sy+10,TS-14,6); wctx.fillStyle="#fff6c0"; wctx.fillRect(sx+7,sy+15,TS-14,2); wctx.fillRect(cxv-1,sy+13,2,5); wctx.fillStyle="#fff"; wctx.font="bold 10px sans-serif"; wctx.textAlign="center"; wctx.fillText("✨",cxv,sy+9); break; } // 収集専用(きらめく宝箱)
         case "L": { wctx.fillStyle="#5a5466"; wctx.fillRect(sx+4,sy+2,TS-8,TS-3); wctx.fillStyle="#6f6980"; wctx.fillRect(sx+6,sy+4,TS-12,TS-6); wctx.fillStyle="#3a3550"; wctx.fillRect(cxv-1,sy+5,2,TS-9); wctx.fillStyle="#ffd24a"; wctx.beginPath(); wctx.arc(cxv,sy+TS/2,3,0,7); wctx.fill(); wctx.fillRect(cxv-1,sy+TS/2,2,5); break; } // 施錠扉
         case "h": { const roofs=["#c0504d","#b07a3a","#5b86c0","#7a9a3a","#a05ac0"]; house("#e6d2a8",roofs[rb(0)%roofs.length],""); break; }
@@ -1879,6 +1887,7 @@
       for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="M")world.grid[y][x]=".";
       const gem=2+Math.floor(f/3); save.gems=(save.gems||0)+gem; addRescue(f); dstateFor(f).resc=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden");
       runDialogue([{n:"ナビ",t:"檻に 誰か 囚われてる…！ 助けよう！"}].concat(lines).concat([{n:"ナビ",t:`救出 成功！（💎+${gem}）`}])); }
+    function pickupKey(tx,ty){ world.grid[ty][tx]="."; world.keys=(world.keys||0)+1; world.keyFloor=world.floor; const ds=dstateFor(world.floor); ds.keytaken=ds.keytaken||{}; ds.keytaken[tx+","+ty]=1; persist(); SFX.buy&&SFX.buy(); showToast("🔑 鍵を 拾った！ 奥の 内部扉を 開けられる"); }
     function pullLever(tx,ty){ const was=world.grid[ty][tx]; const torch=(was==="H"); world.grid[ty][tx]="."; const ds=dstateFor(world.floor); ds.leverpos=ds.leverpos||{}; ds.leverpos[tx+","+ty]=1; actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy();
       if(gridHas("W")||gridHas("H")){ persist(); runDialogue([{n:"ナビ",t:torch?"灯火が ともった…！ でも まだ。もう ひとつ あるみたい。":"カチッ…！ でも まだ 開かない。レバーは もう ひとつ あるみたい。"}]); }
       else { for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); showToast(torch?"🔥 灯火が すべて ともった！":"🎚️ 奥の扉が 開いた！"); runDialogue([{n:"ナビ",t:"ゴゴゴ…！ 奥の 扉が 開いた！ 主のもとへ いこう。"}]); } }
@@ -1890,7 +1899,7 @@
     function riddleEvent(tx,ty){ const r=RIDDLES[(world.floor-1)%RIDDLES.length]; const ans=(prompt("石碑の なぞかけ：\n\n"+r.q+"\n\n（こたえを 入力）","")||"").trim(); if(r.a.includes(ans)){ world.grid[ty][tx]="."; dstateFor(world.floor).riddle=1; openBossNow(); persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("💡 正解！ 扉が 開いた"); runDialogue([{n:"ナビ",t:"せいかい！ ゴゴゴ…と 奥の 扉が 開いたよ！"}]); } else { runDialogue([{n:"ナビ",t:"うーん、ちがうみたい…。もう一度 考えてみよう。"}]); } }
     function tollEvent(tx,ty){ const cost=50+world.floor*30; if(!confirm(`門番「ここを 通るなら 通行料 ${cost}G だ。はらうかい？」\n\n（所持 ${save.gold||0}G）`))return; if((save.gold||0)<cost){ alert("お金が 足りない…。ゴールドを 貯めて 出直そう。"); return; } save.gold-=cost; world.grid[ty][tx]="."; dstateFor(world.floor).toll=1; openBossNow(); persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("💰 通行料を 払った！ 扉が 開いた"); runDialogue([{n:"門番",t:"まいど！ さあ、通っていきな。"}]); }
     function onGuardianWin(){ const ds=dstateFor(world.floor); if(world.guardianPos){ const gp=world.guardianPos; if(world.grid[gp.y]&&world.grid[gp.y][gp.x]==="Z")world.grid[gp.y][gp.x]="."; ds.guardian=1; } for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; ds.door=1; persist(); }
-    function openLockedDoor(){ if((world.keys||0)>=(world.keyNeed||1) && world.keyFloor===world.floor){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; world.keys=0; dstateFor(world.floor).door=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("🔑 扉を 開けた！ 奥へ いこう！"); } else { const need=world.keyNeed||1, have=world.keys||0; runDialogue([{n:"ナビ",t:`固く 施錠されてる…。${need>1?`鍵が ${need}本 必要。いま ${have}本。`:"宝箱に『鍵』が あるはず。"} さがそう。`}]); } }
+    function openLockedDoor(){ if((world.keys||0)>=(world.keyNeed||1) && world.keyFloor===world.floor){ for(let y=0;y<world.H;y++)for(let x=0;x<world.W;x++) if(world.grid[y][x]==="L")world.grid[y][x]="."; world.keys=0; dstateFor(world.floor).door=1; persist(); actionCtx=null; const ab=document.getElementById("world-action"); if(ab)ab.classList.add("hidden"); SFX.buy&&SFX.buy(); showToast("🔑 扉を 開けた！ 奥へ いこう！"); } else { const gim=dungeonGimmick(world.floor); const hint=gim==="lever"?"どこかの『レバー』を 引くと 開く 仕掛けのようだ。":"どこかに『鍵』が 落ちている。さがそう。"; runDialogue([{n:"ナビ",t:`内部の扉だ。固く 閉じてる…。${hint}`}]); } }
     function confirmFlee(){ if(run.context==="boss"){ log("層ボスからは にげられない！"); return; } if(confirm("にげて フィールドに もどりますか？\n（このせんとうの 戦利品は もらえません）")){ returnToField(); } }
 
     function endRun(wiped){ busy=true; hideAllPanels(); if(run.deepestCleared>(save.bestDepth||0))save.bestDepth=run.deepestCleared;
